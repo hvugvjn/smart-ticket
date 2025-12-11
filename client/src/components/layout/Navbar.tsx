@@ -3,11 +3,12 @@
  * Modifications:
  * - Updated for email-based authentication
  * - Shows user email when authenticated
+ * - Added mobile menu toggle functionality
  */
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, User, ShieldCheck, LogOut } from "lucide-react";
+import { Menu, User, ShieldCheck, LogOut, MoreVertical } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { SupportModal } from "@/components/modules/SupportModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,6 +23,39 @@ import {
 export function Navbar() {
   const { isAuthenticated, currentUser, setShowOtpModal, logout, isAdmin } = useAuth();
   const [showSupport, setShowSupport] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        mobileMenuRef.current &&
+        mobileButtonRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node) &&
+        !mobileButtonRef.current.contains(e.target as Node)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    }
+    document.addEventListener("click", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log(`menu toggle => ${mobileMenuOpen ? "open" : "closed"}`);
+  }, [mobileMenuOpen]);
+
+  const handleMobileToggle = () => {
+    setMobileMenuOpen(prev => !prev);
+  };
 
   return (
     <>
@@ -123,9 +157,73 @@ export function Navbar() {
             </Button>
           )}
 
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="w-6 h-6" />
+          <Button
+            ref={mobileButtonRef}
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={handleMobileToggle}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleMobileToggle();
+              }
+            }}
+            aria-haspopup="true"
+            aria-controls="mobile-menu"
+            aria-expanded={mobileMenuOpen}
+            aria-label="Open menu"
+            data-testid="button-mobile-menu"
+          >
+            <MoreVertical className="w-5 h-5" />
           </Button>
+        </div>
+
+        <div
+          id="mobile-menu"
+          ref={mobileMenuRef}
+          role="menu"
+          aria-hidden={!mobileMenuOpen}
+          className={`
+            absolute right-4 top-16 md:hidden
+            bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl
+            shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[180px]
+            transition-all duration-200 ease-out z-[9999]
+            ${mobileMenuOpen 
+              ? "opacity-100 translate-y-0 pointer-events-auto" 
+              : "opacity-0 -translate-y-2 pointer-events-none"
+            }
+          `}
+        >
+          <ul className="py-2">
+            <li role="menuitem">
+              <Link href="/my-trips" onClick={() => setMobileMenuOpen(false)}>
+                <span className="block px-4 py-3 text-sm font-medium text-foreground hover:bg-white/5 transition-colors cursor-pointer">
+                  My Trips
+                </span>
+              </Link>
+            </li>
+            <li role="menuitem">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowSupport(true);
+                }}
+                className="block w-full text-left px-4 py-3 text-sm font-medium text-foreground hover:bg-white/5 transition-colors"
+              >
+                Support
+              </button>
+            </li>
+            {isAdmin && (
+              <li role="menuitem">
+                <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="block px-4 py-3 text-sm font-medium text-foreground hover:bg-white/5 transition-colors cursor-pointer">
+                    Admin
+                  </span>
+                </Link>
+              </li>
+            )}
+          </ul>
         </div>
       </nav>
 

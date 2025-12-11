@@ -4,19 +4,18 @@ let redisUrl = process.env.REDIS_URL;
 
 // Strip surrounding quotes if present (common copy/paste issue)
 if (redisUrl) {
-  // Remove quotes from start/end and any trailing whitespace
   redisUrl = redisUrl.replace(/^["']+|["']+$/g, '').trim();
 }
 
-if (!redisUrl) {
-  console.warn('[redis] REDIS_URL not set - Redis features will be disabled');
+if (!redisUrl || redisUrl.length < 50) {
+  console.warn('[redis] REDIS_URL not set or incomplete - Redis features will be disabled');
 }
 
 let redis: IORedis | null = null;
+let redisDisabled = false;
 
-if (redisUrl) {
+if (redisUrl && redisUrl.length >= 50) {
   try {
-    // Parse the URL to extract components
     const url = new URL(redisUrl);
     const password = decodeURIComponent(url.password);
     const host = url.hostname;
@@ -30,13 +29,15 @@ if (redisUrl) {
       password,
       username: url.username || 'default',
       tls: redisUrl.startsWith('rediss://') ? {} : undefined,
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      lazyConnect: false,
-    });
-    
-    redis.on('connect', () => {
-      console.log('[redis] Connected to Upstash Redis');
+      maxRetriesPerRequest: 1,
+      enableReadyCheck: false,
+      lazyConnect: true,
+      retryStrategy: (times) => {
+        if (times > 2 || redisDisabled) {
+          return null;
+        }
+        return Math.min(times * 500, 2000);
+      },
     });
     
     redis.on('ready', () => {
@@ -44,10 +45,18 @@ if (redisUrl) {
     });
     
     redis.on('error', (err) => {
-      console.error('[redis] Connection error:', err.message);
+      if (err.message.includes('WRONGPASS') || err.message.includes('invalid')) {
+        if (!redisDisabled) {
+          console.error('[redis] Authentication failed - disabling Redis. Check REDIS_URL secret.');
+          redisDisabled = true;
+          redis?.disconnect();
+          redis = null;
+        }
+      }
     });
   } catch (err: any) {
     console.error('[redis] Failed to parse URL:', err.message);
+    redis = null;
   }
 }
 

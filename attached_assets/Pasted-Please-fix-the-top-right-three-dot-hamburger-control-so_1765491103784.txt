@@ -1,0 +1,234 @@
+Please fix the top-right three-dot / hamburger control so it works reliably on small screens.
+
+Requirements (do not change visual design other than small position/z-index fixes):
+
+The three-dot button must toggle a small modal/dropdown containing the links:
+
+My Trips → /my-trips
+
+Support → /support
+
+The control must be keyboard accessible (Enter/Space toggles, Esc closes).
+
+Use aria attributes (aria-haspopup, aria-expanded, role="menu", role="menuitem").
+
+Ensure the dropdown is above all other content (z-index) and does not block other interactions.
+
+Minimal DOM / CSS changes only—preserve existing styles and colors.
+
+Provide console.log when toggle opens/closes for quick verification.
+
+Files to change (create if missing):
+
+client/src/components/NavBar.tsx (or client/src/components/Navbar.tsx depending on your codebase name) — update navbar to include the responsive menu handler
+
+client/src/styles/navbar.css (or add styles where you keep navbar styles)
+
+Make the following changes — replace or insert the provided code into the project files above.
+
+1) client/src/components/NavBar.tsx (or appropriate Navbar file)
+
+Replace the existing small-screen toggle markup with this complete component (TypeScript + React):
+
+// client/src/components/NavBar.tsx
+import React, { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom"; // or your router
+import "./navbar.css";
+
+export default function NavBar(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // close on outside click
+  useEffect(() => {
+    function onDocumentClick(e: MouseEvent) {
+      if (!menuRef.current || !buttonRef.current) return;
+      if (
+        menuRef.current.contains(e.target as Node) ||
+        buttonRef.current.contains(e.target as Node)
+      ) {
+        return;
+      }
+      setOpen(false);
+    }
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("click", onDocumentClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("click", onDocumentClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
+  // manage aria-expanded for accessibility
+  useEffect(() => {
+    if (buttonRef.current) {
+      buttonRef.current.setAttribute("aria-expanded", String(open));
+    }
+    console.log(`menu toggle => ${open ? "open" : "closed"}`);
+  }, [open]);
+
+  const handleToggle = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    // If keyboard event ensure Enter/Space toggles
+    if (e && "key" in e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+    }
+    setOpen((s) => !s);
+  };
+
+  return (
+    <header className="site-header">
+      <nav className="nav-inner">
+        <div className="brand"> {/* keep your brand markup */}
+          <Link to="/"> <span className="logo">NexTravel</span> </Link>
+        </div>
+
+        <ul className="nav-links desktop-only">
+          <li><Link to="/book">Book Tickets</Link></li>
+          <li><Link to="/admin">Admin</Link></li>
+          <li><Link to="/my-trips">My Trips</Link></li>
+          <li><Link to="/support">Support</Link></li>
+        </ul>
+
+        {/* Right side: user + small-screen menu button */}
+        <div className="nav-actions">
+          <div className="user-pill"> {/* keep user button markup */}
+            <button className="user-btn" aria-label="Account">
+              {/* existing user content */}
+              <span className="user-name">vishal.sankar12345</span>
+            </button>
+          </div>
+
+          {/* three-dot / hamburger button (visible on small screens) */}
+          <button
+            ref={buttonRef}
+            className="menu-toggle mobile-only"
+            aria-haspopup="true"
+            aria-controls="mobile-menu"
+            aria-expanded="false"
+            onClick={handleToggle}
+            onKeyDown={(e) => {
+              // support keyboard Enter / Space
+              if (e.key === "Enter" || e.key === " ") {
+                handleToggle(e);
+              }
+            }}
+            title="Open menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="5" cy="6" r="1.5" />
+              <circle cx="12" cy="6" r="1.5" />
+              <circle cx="19" cy="6" r="1.5" />
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile dropdown — rendered near header, above content */}
+      <div
+        id="mobile-menu"
+        ref={menuRef}
+        className={`mobile-menu ${open ? "is-open" : ""}`}
+        role="menu"
+        aria-hidden={!open}
+      >
+        <ul>
+          <li role="menuitem">
+            <Link to="/my-trips" onClick={() => setOpen(false)}>My Trips</Link>
+          </li>
+          <li role="menuitem">
+            <Link to="/support" onClick={() => setOpen(false)}>Support</Link>
+          </li>
+        </ul>
+      </div>
+    </header>
+  );
+}
+
+
+If your project uses a different router import, adapt Link accordingly. The important parts are the button aria-*, the mobile-menu element with role="menu", the is-open class and the outside-click/Esc behavior.
+
+2) client/src/styles/navbar.css (or append to your existing navbar CSS)
+
+Add these CSS rules to make the mobile menu visible and accessible without changing the look & feel for desktop. Keep names consistent with the component above.
+
+/* mobile-only and desktop-only helpers used in component */
+.mobile-only { display: none; }
+.desktop-only { display: flex; }
+
+/* small-screen layout */
+@media (max-width: 900px) {
+  .desktop-only { display: none; }
+  .mobile-only { display: inline-flex; align-items: center; justify-content: center; }
+
+  .nav-actions { display: flex; gap: 12px; align-items: center; }
+}
+
+/* mobile menu (hidden by default) */
+.mobile-menu {
+  position: absolute;
+  right: 12px;
+  top: 64px; /* tweak to match header height */
+  background: rgba(6, 10, 14, 0.98); /* keep dark look */
+  border-radius: 10px;
+  padding: 8px 12px;
+  min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 9999; /* ensure on top */
+}
+
+/* when open */
+.mobile-menu.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.mobile-menu ul { list-style: none; margin: 0; padding: 6px 0; }
+.mobile-menu li { padding: 6px 8px; border-radius: 6px; }
+.mobile-menu li a { color: #e6f7ff; text-decoration: none; display: block; font-weight: 600; }
+
+/* hover/focus */
+.mobile-menu li:hover, .mobile-menu li:focus-within {
+  background: rgba(255,255,255,0.02);
+}
+
+/* ensure toggle button is clickable */
+.menu-toggle { background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 8px; }
+.menu-toggle:focus { outline: 2px solid rgba(3,169,244,0.35); outline-offset: 2px; }
+
+3) Quick verification checklist (what you must see after applying)
+
+On desktop width the original navbar remains unchanged.
+
+When window is narrow (mobile), the three-dot button is visible.
+
+Clicking the three-dot opens the dropdown with My Trips and Support.
+
+Pressing Esc or clicking outside closes the dropdown.
+
+Pressing Enter or Space while the toggle is focused toggles the menu.
+
+console.log prints menu toggle => open or menu toggle => closed on toggle.
+
+4) If you already have a different Navbar filename / path
+
+Search for the file that contains the three-dot button in client/src and replace only that button block plus add the mobile menu <div id="mobile-menu">...</div> below the <nav> in the same file.
+
+Ensure you also append the CSS rules into the CSS file that your navbar imports.
+
+5) If the menu still doesn’t appear
+
+Confirm that the mobile-menu element z-index is higher than other layers (set to 9999 in CSS).
+
+Open browser devtools and ensure .is-open class is applied to #mobile-menu when clicking the button.
+
+Check console logs for menu toggle messages.
