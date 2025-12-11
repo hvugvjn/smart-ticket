@@ -188,4 +188,46 @@ export const api = {
   getTicketUrl(bookingId: number): string {
     return `${API_BASE}/bookings/${bookingId}/ticket`;
   },
+
+  // Live tracking
+  async getTripStops(tripId: number): Promise<Array<{ lat: number; lng: number; name: string }>> {
+    try {
+      const res = await fetch(`${API_BASE}/trips/${tripId}/stops`);
+      if (!res.ok) throw new Error("Failed to fetch stops");
+      const data = await res.json();
+      console.log("[api] getTripStops success:", data);
+      return data;
+    } catch (error) {
+      console.log("[api] getTripStops fallback to mock data");
+      return [];
+    }
+  },
+
+  async getTripRoute(tripId: number): Promise<{ pickup: { lat: number; lng: number; name: string }; drop: { lat: number; lng: number; name: string }; stops: { lat: number; lng: number; name: string }[] } | null> {
+    try {
+      const res = await fetch(`${API_BASE}/trips/${tripId}/route`);
+      if (!res.ok) throw new Error("Failed to fetch route");
+      const data = await res.json();
+      console.log("[api] getTripRoute success:", data);
+      return data;
+    } catch (error) {
+      console.log("[api] getTripRoute error:", error);
+      return null;
+    }
+  },
+
+  async getLivePosition(tripId: number): Promise<{ lat: number; lng: number; ts: number } | null> {
+    try {
+      const res = await fetch(`${API_BASE}/track/${tripId}/positions`);
+      if (!res.ok) throw new Error("Failed to fetch position");
+      const data = await res.json();
+      if (data.positions && data.positions.length > 0) {
+        return data.positions[data.positions.length - 1];
+      }
+      return null;
+    } catch (error) {
+      console.error("[api] getLivePosition error:", error);
+      return null;
+    }
+  },
 };

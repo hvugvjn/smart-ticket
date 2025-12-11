@@ -879,6 +879,117 @@ export async function registerRoutes(
     }
   });
 
+  // ============ LIVE TRACKING ENDPOINTS ============
+  
+  const routeCoordinates: Record<number, { pickup: { lat: number; lng: number; name: string }; drop: { lat: number; lng: number; name: string }; stops: { lat: number; lng: number; name: string }[] }> = {
+    1: {
+      pickup: { lat: 19.0760, lng: 72.8777, name: "Mumbai Central" },
+      drop: { lat: 12.9716, lng: 77.5946, name: "Bengaluru" },
+      stops: [
+        { lat: 18.5204, lng: 73.8567, name: "Pune" },
+        { lat: 15.3173, lng: 75.7139, name: "Hubli" },
+      ],
+    },
+    2: {
+      pickup: { lat: 28.7041, lng: 77.1025, name: "Delhi" },
+      drop: { lat: 26.9124, lng: 75.7873, name: "Jaipur" },
+      stops: [
+        { lat: 28.4595, lng: 77.0266, name: "Gurgaon" },
+        { lat: 27.2046, lng: 77.4977, name: "Bharatpur" },
+      ],
+    },
+    3: {
+      pickup: { lat: 13.0827, lng: 80.2707, name: "Chennai" },
+      drop: { lat: 17.3850, lng: 78.4867, name: "Hyderabad" },
+      stops: [
+        { lat: 14.6819, lng: 77.6006, name: "Anantapur" },
+        { lat: 15.8281, lng: 78.0373, name: "Kurnool" },
+      ],
+    },
+  };
+  
+  const busPositionProgress: Record<number, number> = {};
+  
+  app.get("/api/trips/:id/stops", async (req, res) => {
+    try {
+      const tripId = parseInt(req.params.id);
+      const route = routeCoordinates[tripId];
+      
+      if (!route) {
+        return res.json([]);
+      }
+      
+      console.log("[api] getTripStops success for trip", tripId);
+      res.json(route.stops);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/trips/:id/route", async (req, res) => {
+    try {
+      const tripId = parseInt(req.params.id);
+      const route = routeCoordinates[tripId];
+      
+      if (!route) {
+        return res.status(404).json({ error: "Route not found" });
+      }
+      
+      res.json(route);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/track/:tripId/positions", async (req, res) => {
+    try {
+      const tripId = parseInt(req.params.tripId);
+      const route = routeCoordinates[tripId];
+      
+      if (!route) {
+        return res.json({ tripId: tripId.toString(), positions: [] });
+      }
+      
+      if (!busPositionProgress[tripId]) {
+        busPositionProgress[tripId] = 0;
+      }
+      
+      busPositionProgress[tripId] += 0.02;
+      if (busPositionProgress[tripId] > 1) {
+        busPositionProgress[tripId] = 0;
+      }
+      
+      const progress = busPositionProgress[tripId];
+      
+      const allPoints = [route.pickup, ...route.stops, route.drop];
+      const totalSegments = allPoints.length - 1;
+      const segmentProgress = progress * totalSegments;
+      const segmentIndex = Math.min(Math.floor(segmentProgress), totalSegments - 1);
+      const segmentFraction = segmentProgress - segmentIndex;
+      
+      const startPoint = allPoints[segmentIndex];
+      const endPoint = allPoints[segmentIndex + 1];
+      
+      const currentLat = startPoint.lat + (endPoint.lat - startPoint.lat) * segmentFraction;
+      const currentLng = startPoint.lng + (endPoint.lng - startPoint.lng) * segmentFraction;
+      
+      const position = {
+        lat: currentLat,
+        lng: currentLng,
+        ts: Date.now(),
+      };
+      
+      console.log("[track] Position update for trip", tripId, position);
+      
+      res.json({
+        tripId: tripId.toString(),
+        positions: [position],
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ============ REDIS DEBUG ENDPOINT ============
   
   app.get("/api/debug/redis-ping", async (req, res) => {

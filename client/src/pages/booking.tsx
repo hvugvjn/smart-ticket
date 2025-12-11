@@ -7,7 +7,9 @@ import { PickupModal } from "@/components/PickupModal";
 import { DropModal } from "@/components/DropModal";
 import { PassengerDetailsModal } from "@/components/PassengerDetailsModal";
 import { FareBreakdownModal, calculateFareBreakdown, calculateFareFromBasePrice } from "@/components/FareBreakdownModal";
-import { MapMock } from "@/components/MapMock";
+import { MapMini } from "@/components/MapMini";
+import { LiveMapOverlay } from "@/components/LiveMapOverlay";
+import { TripCardSkeleton, MapSkeleton } from "@/components/SkeletonLoader";
 import { Button } from "@/components/ui/button";
 import { api, type Show, type Seat } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +17,7 @@ import { formatINR } from "@/lib/currency";
 import { toast } from "@/hooks/use-toast";
 import { sampleTrips } from "@/data/sampleTrips";
 import { format, parseISO } from "date-fns";
-import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock, Receipt } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock, Receipt, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface PassengerDetails {
@@ -54,10 +56,17 @@ export default function BookingPage() {
   const [selectedDrop, setSelectedDrop] = useState<{ id: string; label: string } | null>(null);
   const [passengerDetails, setPassengerDetails] = useState<PassengerDetails | null>(null);
   const [showFareModal, setShowFareModal] = useState(false);
+  const [showLiveMap, setShowLiveMap] = useState(false);
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ["show", numericTripId],
     queryFn: () => api.getShow(numericTripId),
+    enabled: !isNaN(numericTripId) && numericTripId > 0,
+  });
+
+  const { data: routeData, isLoading: isRouteLoading } = useQuery({
+    queryKey: ["route", numericTripId],
+    queryFn: () => api.getTripRoute(numericTripId),
     enabled: !isNaN(numericTripId) && numericTripId > 0,
   });
 
@@ -209,9 +218,9 @@ export default function BookingPage() {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground mt-4">Loading trip details...</p>
+        <div className="main-content max-w-4xl mx-auto px-4 py-8 space-y-6">
+          <TripCardSkeleton />
+          <MapSkeleton />
         </div>
       </div>
     );
@@ -275,13 +284,31 @@ export default function BookingPage() {
               </div>
             )}
 
-            <div className="pt-4 border-t border-white/10">
-              <MapMock
-                departureTime={trip.departureTime}
-                arrivalTime={trip.arrivalTime}
-                source={trip.source}
-                destination={trip.destination}
-              />
+            <div className="pt-4 border-t border-white/10 space-y-3">
+              {isRouteLoading ? (
+                <MapSkeleton />
+              ) : routeData ? (
+                <MapMini
+                  pickup={routeData.pickup}
+                  drop={routeData.drop}
+                  stops={routeData.stops || []}
+                />
+              ) : (
+                <div className="h-[220px] rounded-xl bg-white/5 flex items-center justify-center text-muted-foreground">
+                  <p>Route map unavailable</p>
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-white/5 border-white/10 hover:bg-primary/20 hover:border-primary/50"
+                onClick={() => setShowLiveMap(true)}
+                data-testid="button-track-live"
+              >
+                <Radio className="w-4 h-4 mr-2 text-green-500 animate-pulse" />
+                Track my bus live
+              </Button>
             </div>
           </div>
         )}
@@ -419,6 +446,16 @@ export default function BookingPage() {
           classType: (s.classType === "BUSINESS" ? "BUSINESS" : "ECONOMY") as "ECONOMY" | "BUSINESS"
         }))}
       />
+
+      {showLiveMap && routeData && (
+        <LiveMapOverlay
+          tripId={numericTripId}
+          pickup={routeData.pickup}
+          drop={routeData.drop}
+          stops={routeData.stops || []}
+          onClose={() => setShowLiveMap(false)}
+        />
+      )}
     </div>
   );
 }
