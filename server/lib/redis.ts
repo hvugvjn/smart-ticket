@@ -1,6 +1,11 @@
 import IORedis from 'ioredis';
 
-const redisUrl = process.env.REDIS_URL;
+let redisUrl = process.env.REDIS_URL;
+
+// Strip surrounding quotes if present (common copy/paste issue)
+if (redisUrl) {
+  redisUrl = redisUrl.replace(/^["']|["']$/g, '');
+}
 
 if (!redisUrl) {
   console.warn('[redis] REDIS_URL not set - Redis features will be disabled');
@@ -11,6 +16,7 @@ const redis = redisUrl
       maxRetriesPerRequest: 3,
       enableReadyCheck: true,
       lazyConnect: false,
+      tls: redisUrl.startsWith('rediss://') ? {} : undefined,
     })
   : null;
 
