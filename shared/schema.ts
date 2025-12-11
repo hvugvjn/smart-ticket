@@ -45,8 +45,8 @@ export const bookings = pgTable("bookings", {
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  phoneNumber: text("phone_number").unique(),
-  email: text("email").unique(),
+  phoneNumber: text("phone_number"),
+  email: text("email").notNull().unique(),
   otp: text("otp"),
   otpExpiresAt: timestamp("otp_expires_at"),
   otpAttempts: integer("otp_attempts").notNull().default(0),
