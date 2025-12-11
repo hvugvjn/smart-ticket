@@ -155,7 +155,7 @@ export class PostgresStorage implements IStorage {
       .where(
         and(
           eq(bookings.showId, showId),
-          inArray(bookings.status, ["PENDING", "CONFIRMED"])
+          eq(bookings.status, "CONFIRMED")
         )
       );
     
