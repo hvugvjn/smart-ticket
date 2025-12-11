@@ -40,6 +40,7 @@ export const bookings = pgTable("bookings", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   idempotencyKey: text("idempotency_key").notNull().unique(),
   passengerDetails: jsonb("passenger_details"),
+  gender: text("gender").default("unknown"),
   expiresAt: timestamp("expires_at"),
   confirmedAt: timestamp("confirmed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

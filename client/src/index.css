@@ -112,6 +112,21 @@
   .seat-booked {
     @apply bg-white/5 border-transparent opacity-30 cursor-not-allowed;
   }
+
+  .seat-booked-male {
+    background: linear-gradient(135deg, #03A9F4, #007ACC);
+    @apply text-white cursor-not-allowed opacity-90;
+  }
+
+  .seat-booked-female {
+    background: linear-gradient(135deg, #F451B2, #D02C90);
+    @apply text-white cursor-not-allowed opacity-90;
+  }
+
+  .seat-booked-other {
+    background: linear-gradient(135deg, #888, #555);
+    @apply text-white cursor-not-allowed opacity-90;
+  }
   
   .seat-female {
     @apply border-pink-500/50 hover:bg-pink-500 hover:shadow-[0_0_15px_rgba(236,72,153,0.5)];

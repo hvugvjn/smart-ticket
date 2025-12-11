@@ -36,6 +36,7 @@ export interface IStorage {
   confirmBooking(id: number): Promise<Booking | undefined>;
   expireOldBookings(): Promise<number>;
   getBookedSeatIds(showId: number): Promise<number[]>;
+  getSeatGenderMap(showId: number): Promise<Map<number, string>>;
   
   getUserByPhone(phoneNumber: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -145,6 +146,29 @@ export class PostgresStorage implements IStorage {
       }
     });
     return allSeatIds;
+  }
+
+  async getSeatGenderMap(showId: number): Promise<Map<number, string>> {
+    const result = await db
+      .select({ seatIds: bookings.seatIds, gender: bookings.gender })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.showId, showId),
+          inArray(bookings.status, ["PENDING", "CONFIRMED"])
+        )
+      );
+    
+    const seatGenderMap = new Map<number, string>();
+    result.forEach(r => {
+      if (r.seatIds) {
+        const gender = r.gender || "unknown";
+        r.seatIds.forEach(seatId => {
+          seatGenderMap.set(seatId, gender);
+        });
+      }
+    });
+    return seatGenderMap;
   }
 
   async getUserByPhone(phoneNumber: string): Promise<User | undefined> {

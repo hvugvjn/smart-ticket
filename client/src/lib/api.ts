@@ -27,6 +27,7 @@ export interface Seat {
   price: string;
   features: string[];
   status?: "available" | "booked" | "pending";
+  bookedGender?: "male" | "female" | "other" | "unknown" | null;
 }
 
 export interface Booking {

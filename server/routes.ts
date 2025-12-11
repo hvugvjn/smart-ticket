@@ -125,10 +125,12 @@ export async function registerRoutes(
       const showId = parseInt(req.params.id);
       const allSeats = await storage.getSeats(showId);
       const bookedSeatIds = await storage.getBookedSeatIds(showId);
+      const seatGenderMap = await storage.getSeatGenderMap(showId);
       
       const seatsWithStatus = allSeats.map(seat => ({
         ...seat,
         status: bookedSeatIds.includes(seat.id) ? "booked" : "available",
+        bookedGender: seatGenderMap.get(seat.id) || null,
       }));
 
       res.json(seatsWithStatus);
@@ -217,6 +219,10 @@ export async function registerRoutes(
         const totalAmount = lockedSeats.reduce((sum, seat) => sum + parseFloat(seat.price), 0);
         const expiresAt = new Date(Date.now() + 60000);
 
+        const passengerGender = passenger?.gender?.toLowerCase() || "unknown";
+        const allowedGenders = ["male", "female", "other", "unknown"];
+        const normalizedGender = allowedGenders.includes(passengerGender) ? passengerGender : "unknown";
+
         const booking = await tx
           .insert(bookings)
           .values({
@@ -227,6 +233,7 @@ export async function registerRoutes(
             totalAmount: totalAmount.toFixed(2),
             idempotencyKey,
             passengerDetails: passenger || null,
+            gender: normalizedGender,
             expiresAt,
           })
           .returning();

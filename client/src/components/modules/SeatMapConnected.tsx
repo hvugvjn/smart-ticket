@@ -55,6 +55,17 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
     const isSelected = selectedIds.has(seat.id);
     const isBooked = seat.status === "booked";
     const isLadies = seat.type === "ladies";
+    const bookedGender = seat.bookedGender?.toLowerCase() || "unknown";
+
+    const getBookedGenderClass = () => {
+      if (!isBooked) return "";
+      switch (bookedGender) {
+        case "male": return "seat-booked-male";
+        case "female": return "seat-booked-female";
+        case "other": return "seat-booked-other";
+        default: return "seat-booked";
+      }
+    };
 
     return (
       <TooltipProvider key={seat.id}>
@@ -68,7 +79,7 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
               className={cn(
                 "relative flex items-center justify-center rounded-md transition-all duration-300",
                 seat.deck === "lower" ? "w-10 h-10" : "w-10 h-16",
-                isBooked && "seat-booked text-muted-foreground/20",
+                isBooked && getBookedGenderClass(),
                 isSelected && "seat-selected text-primary-foreground",
                 !isBooked && !isSelected && "seat-available text-muted-foreground",
                 isLadies && !isBooked && !isSelected && "seat-female text-pink-400"
@@ -87,6 +98,9 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
               <p className="font-bold text-primary">{seat.seatNumber}</p>
               <p>{seat.type === "sleeper" ? "Sleeper" : "Seater"}</p>
               <p className="text-muted-foreground">${seat.price}</p>
+              {isBooked && bookedGender !== "unknown" && (
+                <p className="text-[10px] capitalize text-accent-foreground/70">Booked by: {bookedGender}</p>
+              )}
               {seat.features?.map(f => (
                 <span key={f} className="block text-[10px] text-accent-foreground/70">• {f}</span>
               ))}
@@ -121,7 +135,7 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-500">
       
-      <div className="flex justify-center gap-4 text-xs text-muted-foreground mb-6">
+      <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground mb-6">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-white/10 border border-white/20" /> Available
         </div>
@@ -129,10 +143,16 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
           <div className="w-3 h-3 rounded bg-primary" /> Selected
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-white/5 opacity-30" /> Booked
+          <div className="w-3 h-3 rounded bg-gradient-to-br from-sky-400 to-blue-600" /> Male
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded border border-pink-500/50" /> Ladies
+          <div className="w-3 h-3 rounded bg-gradient-to-br from-pink-400 to-pink-600" /> Female
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-gradient-to-br from-gray-400 to-gray-600" /> Other
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded border border-pink-500/50" /> Ladies Only
         </div>
       </div>
 
