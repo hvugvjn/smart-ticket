@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
+import redis from "./lib/redis";
 import { sendOtpEmail } from "./lib/mail";
 import { sendBookingConfirmationEmail } from "./lib/booking-email";
 import { requireAdmin } from "./middleware/requireAdmin";
@@ -868,6 +869,22 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error('PDF generation error:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============ REDIS DEBUG ENDPOINT ============
+  
+  app.get("/api/debug/redis-ping", async (req, res) => {
+    try {
+      if (!redis) {
+        return res.status(503).json({ error: "Redis not configured", pong: null });
+      }
+      const pong = await redis.ping();
+      console.log('[redis] Ping successful:', pong);
+      res.json({ pong });
+    } catch (error: any) {
+      console.error('[redis] Ping failed:', error.message);
+      res.status(500).json({ error: error.message, pong: null });
     }
   });
 
