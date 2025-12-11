@@ -1,0 +1,41 @@
+Implement full search behavior for the Home search bar and results display.
+
+Goal
+When the user clicks SEARCH (or presses Enter) the app must:
+1. Validate inputs (FROM, TO, DATE).
+2. Fetch matching trips from the backend if available:
+   GET /api/shows?from=<from>&to=<to>&date=<YYYY-MM-DD>
+3. If backend is not available, fallback to client-side filtering of sampleTrips data.
+4. Render the search results list below the search bar or show a "No buses available" message.
+5. Disable the SEARCH button until FROM, TO and DATE are selected.
+
+Detailed tasks
+
+A — Frontend: search handler
+1. Update file: `client/src/pages/home.tsx`
+   - Add a controlled `onSearch()` function that:
+     • Validates `from`, `to`, `date` — if any missing, show inline error (e.g., "Please select From / To / Date").
+     • If `import.meta.env.VITE_API_BASE` is set and reachable, call:
+         `GET ${import.meta.env.VITE_API_BASE}/api/shows?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${date}`
+       - Use `fetch` with 6s timeout.
+       - If response status 200, parse JSON and use returned `shows` array.
+       - If network error or non-2xx, fallback to client filter (see B).
+     • If `VITE_API_BASE` is not set or fetch fails, filter local sample trips (client/src/data/sampleTrips.ts).
+       - Filter criteria: exact case-insensitive match for source and destination and date (if trips include date); if trips do not include date, filter only by source/destination.
+     • Set `results` state to the resulting array and set `isSearched=true`.
+
+   - Add UX behaviors:
+     • Disable SEARCH button until all three fields have values.
+     • Show a short loading spinner on the SEARCH button while the request/filter runs.
+     • If results.length === 0, show a friendly block:
+         "No buses available for Mumbai → Bengaluru on 2025-12-13. Try different dates or cities."
+     • If results found, render a list of trip cards (reuse existing trip card component if present). Each card must show:
+         - Operator name
+         - Departure time
+         - Arrival time
+         - Duration
+         - Price (use existing INR formatter)
+         - "View Seats" button linking to `/booking/:id` (id from trip object)
+
+B — Frontend: client-side fallback & sample data
+1. Ensure `client/src/data/sampleTrips.ts` exists and exports an array of trip objects with fields at minimum:

@@ -4,11 +4,13 @@
  * - Integrated AuthContext for booking protection
  * - Changed all currency from USD to INR
  * - Opens OTP modal when unauthenticated user tries to book
+ * - Added search functionality with API and fallback
  */
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { SearchHero } from "@/components/modules/SearchHero";
+import { SearchResults } from "@/components/SearchResults";
 import { api, type Show, type Seat } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
@@ -20,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/currency";
+import { sampleTrips, filterTrips } from "@/data/sampleTrips";
 
 export default function HomeConnected() {
   const { isAuthenticated, currentUser, setShowOtpModal, setPendingBooking, pendingBooking } = useAuth();
@@ -28,12 +31,73 @@ export default function HomeConnected() {
   const [bookingStep, setBookingStep] = useState<"seats" | "processing" | "success">("seats");
   const [currentBookingId, setCurrentBookingId] = useState<number | null>(null);
   
+  // Search state
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearched, setIsSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchFrom, setSearchFrom] = useState("");
+  const [searchTo, setSearchTo] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+  
   const queryClient = useQueryClient();
 
   const { data: shows = [] } = useQuery({
     queryKey: ["shows"],
     queryFn: () => api.getShows(),
   });
+
+  const handleSearch = async ({ from, to, date }: { from: string; to: string; date?: Date }) => {
+    console.log("SEARCH START", { from, to, date: date?.toISOString().split("T")[0] });
+    
+    if (!from || !to) {
+      toast({
+        title: "Missing fields",
+        description: "Please select both From and To cities",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSearchFrom(from);
+    setSearchTo(to);
+    setSearchDate(date ? date.toISOString().split("T")[0] : "");
+    setIsSearching(true);
+    setIsSearched(true);
+
+    try {
+      // Try API first
+      const dateParam = date ? date.toISOString().split("T")[0] : "";
+      const url = `/api/shows?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${dateParam ? `&date=${dateParam}` : ""}`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Filter results by source/destination (API returns all shows)
+        const filtered = data.filter((trip: any) => 
+          trip.source.toLowerCase() === from.toLowerCase() &&
+          trip.destination.toLowerCase() === to.toLowerCase()
+        );
+        console.log("SEARCH RESULTS", filtered.length);
+        setSearchResults(filtered);
+      } else {
+        throw new Error("API error");
+      }
+    } catch (error) {
+      // Fallback to local sample data
+      console.log("FALLBACK: local sampleTrips used");
+      const dateStr = date ? date.toISOString().split("T")[0] : undefined;
+      const filtered = filterTrips(sampleTrips, from, to, dateStr);
+      console.log("SEARCH RESULTS", filtered.length);
+      setSearchResults(filtered);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Resume booking after login
   useEffect(() => {
@@ -145,10 +209,24 @@ export default function HomeConnected() {
         </div>
       </div>
 
-      <SearchHero onSearch={() => {}} />
+      <SearchHero onSearch={handleSearch} />
 
       <div className="max-w-5xl mx-auto px-4 py-24 space-y-12">
-        {shows.length > 0 && (
+        {/* Search Results Section */}
+        {isSearched && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-500">
+            <SearchResults 
+              results={searchResults}
+              from={searchFrom}
+              to={searchTo}
+              date={searchDate || undefined}
+              isLoading={isSearching}
+            />
+          </div>
+        )}
+
+        {/* All Available Trips (shown when not searching) */}
+        {!isSearched && shows.length > 0 && (
           <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-display font-semibold">Available Trips</h2>
