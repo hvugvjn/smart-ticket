@@ -6,21 +6,24 @@ import {
   users,
   seatLocks,
   refunds,
+  seatNotifications,
   type Show,
   type Seat,
   type Booking,
   type User,
   type SeatLock,
   type Refund,
+  type SeatNotification,
   type InsertShow,
   type InsertSeat,
   type InsertBooking,
   type InsertUser,
   type InsertSeatLock,
   type InsertRefund,
+  type InsertSeatNotification,
   type BookSeatsRequest,
 } from "@shared/schema";
-import { eq, and, inArray, sql, lt, gt } from "drizzle-orm";
+import { eq, and, inArray, sql, lt, gt, ne } from "drizzle-orm";
 
 export interface IStorage {
   getShows(): Promise<Show[]>;
@@ -64,6 +67,11 @@ export interface IStorage {
   getBookingsByUserId(userId: string): Promise<Booking[]>;
   cancelBooking(id: number, refundAmount: number, reason: string): Promise<{ booking: Booking; refund: Refund } | null>;
   getRefundByBookingId(bookingId: number): Promise<Refund | undefined>;
+  
+  // Seat notifications
+  createSeatNotification(notification: InsertSeatNotification): Promise<SeatNotification>;
+  getPendingNotifications(showId: number, seatNumber: string): Promise<SeatNotification[]>;
+  markNotificationSent(id: number): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -363,6 +371,32 @@ export class PostgresStorage implements IStorage {
   async getRefundByBookingId(bookingId: number): Promise<Refund | undefined> {
     const result = await db.select().from(refunds).where(eq(refunds.bookingId, bookingId));
     return result[0];
+  }
+
+  // Seat notification methods
+  async createSeatNotification(notification: InsertSeatNotification): Promise<SeatNotification> {
+    const result = await db.insert(seatNotifications).values(notification).returning();
+    return result[0];
+  }
+
+  async getPendingNotifications(showId: number, seatNumber: string): Promise<SeatNotification[]> {
+    return await db
+      .select()
+      .from(seatNotifications)
+      .where(
+        and(
+          eq(seatNotifications.showId, showId),
+          eq(seatNotifications.seatNumber, seatNumber),
+          ne(seatNotifications.notified, "true")
+        )
+      );
+  }
+
+  async markNotificationSent(id: number): Promise<void> {
+    await db
+      .update(seatNotifications)
+      .set({ notified: "true" })
+      .where(eq(seatNotifications.id, id));
   }
 }
 

@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import redis from "./lib/redis";
-import { sendOtpEmail } from "./lib/mail";
+import { sendOtpEmail, sendSeatAvailableEmail } from "./lib/mail";
 import { sendBookingConfirmationEmail } from "./lib/booking-email";
 import { requireAdmin } from "./middleware/requireAdmin";
 import { 
@@ -13,6 +13,7 @@ import {
   requestOtpEmailSchema,
   verifyOtpEmailSchema,
   insertShowSchema,
+  notifySeatSchema,
   type BookSeatsRequest,
   bookings,
   seats as seatsTable,
@@ -726,11 +727,33 @@ export async function registerRoutes(
         try {
           const user = await storage.getUserById(parseInt(booking.userId));
           if (user?.email) {
-            // TODO: Implement cancellation email
             console.log('Cancellation email would be sent to', user.email);
           }
         } catch (emailErr) {
           console.error('Failed to send cancellation email', emailErr);
+        }
+      }
+      
+      // Notify users who requested notifications for released seats
+      if (booking.seatIds && booking.seatIds.length > 0) {
+        try {
+          const releasedSeats = await storage.getSeatsByIds(booking.seatIds);
+          for (const seat of releasedSeats) {
+            // Normalize seatNumber to match how notifications are stored
+            const normalizedSeatNumber = seat.seatNumber.trim().toUpperCase();
+            const notifications = await storage.getPendingNotifications(booking.showId, normalizedSeatNumber);
+            for (const notification of notifications) {
+              try {
+                await sendSeatAvailableEmail(notification.email, seat.seatNumber, show.source, show.destination);
+                await storage.markNotificationSent(notification.id);
+                console.log(`[notify] Sent seat available email to ${notification.email} for seat ${seat.seatNumber}`);
+              } catch (emailErr) {
+                console.error(`[notify] Failed to send seat available email:`, emailErr);
+              }
+            }
+          }
+        } catch (notifyErr) {
+          console.error('[notify] Error processing seat notifications:', notifyErr);
         }
       }
       
@@ -985,6 +1008,42 @@ export async function registerRoutes(
         tripId: tripId.toString(),
         positions: [position],
       });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============ SEAT NOTIFICATION ENDPOINT ============
+  
+  app.post("/api/notify-seat", async (req, res) => {
+    try {
+      const parsed = notifySeatSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+
+      const { showId, email } = parsed.data;
+      // Normalize seatNumber: trim whitespace and convert to uppercase
+      const seatNumber = parsed.data.seatNumber.trim().toUpperCase();
+      
+      // Check for existing pending notification for this email/seat combo
+      const existingNotifications = await storage.getPendingNotifications(showId, seatNumber);
+      const alreadySubscribed = existingNotifications.some(n => n.email.toLowerCase() === email.toLowerCase());
+      
+      if (alreadySubscribed) {
+        return res.json({ success: true, message: "You're already signed up to be notified for this seat." });
+      }
+      
+      await storage.createSeatNotification({
+        showId,
+        seatNumber,
+        email: email.toLowerCase(),
+        notified: "false",
+      });
+      
+      console.log(`[notify] Saved notification request for seat ${seatNumber} on show ${showId} to ${email}`);
+      
+      res.json({ success: true, message: "Notification request saved. We'll email you when this seat becomes free." });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

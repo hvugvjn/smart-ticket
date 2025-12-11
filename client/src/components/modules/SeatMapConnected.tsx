@@ -3,17 +3,27 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type Seat } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Armchair, Bed, User } from "lucide-react";
+import { Armchair, Bed, User, Bell } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface SeatMapConnectedProps {
   showId: number;
   onSelectionChange: (seats: Seat[]) => void;
   maxSeats?: number;
+  userEmail?: string;
 }
 
-export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: SeatMapConnectedProps) {
+export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6, userEmail = "" }: SeatMapConnectedProps) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [notifySeat, setNotifySeat] = useState<Seat | null>(null);
+  const [notifyEmail, setNotifyEmail] = useState(userEmail);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: seats = [], isLoading, refetch } = useQuery({
     queryKey: ["seats", showId],
@@ -49,6 +59,28 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
     
     const selectedSeats = seats.filter(s => newSelected.has(s.id));
     onSelectionChange(selectedSeats);
+  };
+
+  const openNotifyModal = (seat: Seat) => {
+    setNotifySeat(seat);
+    setNotifyEmail(userEmail);
+    setNotifyModalOpen(true);
+  };
+
+  const handleNotifySubmit = async () => {
+    if (!notifySeat || !notifyEmail) return;
+    
+    setIsSubmitting(true);
+    try {
+      const result = await api.notifySeat(showId, notifySeat.seatNumber, notifyEmail);
+      toast.success(result.message);
+      setNotifyModalOpen(false);
+      setNotifySeat(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save notification");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderSeat = (seat: Seat) => {
@@ -97,9 +129,22 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
             <div className="text-xs font-medium">
               <p className="font-bold text-primary">{seat.seatNumber}</p>
               <p>{seat.type === "sleeper" ? "Sleeper" : "Seater"}</p>
-              <p className="text-muted-foreground">${seat.price}</p>
+              <p className="text-muted-foreground">₹{seat.price}</p>
               {isBooked && bookedGender !== "unknown" && (
                 <p className="text-[10px] capitalize text-accent-foreground/70">Booked by: {bookedGender}</p>
+              )}
+              {isBooked && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openNotifyModal(seat);
+                  }}
+                  className="mt-2 flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                  data-testid={`notify-btn-${seat.seatNumber}`}
+                >
+                  <Bell className="w-3 h-3" />
+                  Notify me when available
+                </button>
               )}
               {seat.features?.map(f => (
                 <span key={f} className="block text-[10px] text-accent-foreground/70">• {f}</span>
@@ -199,6 +244,49 @@ export function SeatMapConnected({ showId, onSelectionChange, maxSeats = 6 }: Se
           </div>
         </div>
       </div>
+
+      <Dialog open={notifyModalOpen} onOpenChange={setNotifyModalOpen}>
+        <DialogContent className="sm:max-w-[400px] bg-background/95 backdrop-blur border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              Get Notified
+            </DialogTitle>
+            <DialogDescription>
+              We'll email you when seat <span className="font-bold text-primary">{notifySeat?.seatNumber}</span> becomes available.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="notify-email">Email Address</Label>
+              <Input
+                id="notify-email"
+                type="email"
+                placeholder="your@email.com"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                data-testid="input-notify-email"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setNotifyModalOpen(false)}
+              data-testid="button-notify-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleNotifySubmit}
+              disabled={!notifyEmail || isSubmitting}
+              data-testid="button-notify-submit"
+            >
+              {isSubmitting ? "Saving..." : "Notify Me"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

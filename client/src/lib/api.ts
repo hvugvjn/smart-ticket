@@ -230,4 +230,18 @@ export const api = {
       return null;
     }
   },
+
+  // Seat notifications
+  async notifySeat(showId: number, seatNumber: string, email: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/notify-seat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showId, seatNumber, email }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to save notification");
+    }
+    return res.json();
+  },
 };

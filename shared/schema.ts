@@ -82,8 +82,8 @@ export const refunds = pgTable("refunds", {
 export const seatNotifications = pgTable("seat_notifications", {
   id: serial("id").primaryKey(),
   showId: integer("show_id").notNull().references(() => shows.id),
-  seatNumber: text("seat_number").notNull(),
-  email: text("email").notNull(),
+  seatNumber: text("seat_number").notNull(), // Always stored uppercase/trimmed
+  email: text("email").notNull(), // Always stored lowercase
   notified: text("notified").notNull().default("false"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
