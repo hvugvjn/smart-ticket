@@ -4,17 +4,23 @@ import {
   seats, 
   bookings, 
   users,
+  seatLocks,
+  refunds,
   type Show,
   type Seat,
   type Booking,
   type User,
+  type SeatLock,
+  type Refund,
   type InsertShow,
   type InsertSeat,
   type InsertBooking,
   type InsertUser,
+  type InsertSeatLock,
+  type InsertRefund,
   type BookSeatsRequest,
 } from "@shared/schema";
-import { eq, and, inArray, sql, lt } from "drizzle-orm";
+import { eq, and, inArray, sql, lt, gt } from "drizzle-orm";
 
 export interface IStorage {
   getShows(): Promise<Show[]>;
@@ -45,6 +51,18 @@ export interface IStorage {
   incrementOtpAttemptsByEmail(email: string): Promise<void>;
   resetOtpAttemptsByEmail(email: string): Promise<void>;
   updateUserGender(id: number, gender: string): Promise<User | undefined>;
+  
+  // Seat locking
+  lockSeat(showId: number, seatId: number, userId: string, expiresAt: Date): Promise<SeatLock | null>;
+  unlockSeat(showId: number, seatId: number, userId: string): Promise<boolean>;
+  getLockedSeats(showId: number): Promise<SeatLock[]>;
+  cleanupExpiredLocks(): Promise<number>;
+  
+  // Cancellation and refunds
+  getBookingById(id: number): Promise<Booking | undefined>;
+  getBookingsByUserId(userId: string): Promise<Booking[]>;
+  cancelBooking(id: number, refundAmount: number, reason: string): Promise<{ booking: Booking; refund: Refund } | null>;
+  getRefundByBookingId(bookingId: number): Promise<Refund | undefined>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -207,6 +225,119 @@ export class PostgresStorage implements IStorage {
       .set({ gender })
       .where(eq(users.id, id))
       .returning();
+    return result[0];
+  }
+
+  // Seat locking methods
+  async lockSeat(showId: number, seatId: number, userId: string, expiresAt: Date): Promise<SeatLock | null> {
+    // First check if seat is already locked by someone else
+    const existingLock = await db
+      .select()
+      .from(seatLocks)
+      .where(
+        and(
+          eq(seatLocks.showId, showId),
+          eq(seatLocks.seatId, seatId),
+          gt(seatLocks.expiresAt, new Date())
+        )
+      );
+    
+    if (existingLock.length > 0 && existingLock[0].userId !== userId) {
+      return null; // Locked by someone else
+    }
+    
+    // If already locked by same user, update expiry
+    if (existingLock.length > 0) {
+      const updated = await db
+        .update(seatLocks)
+        .set({ expiresAt })
+        .where(eq(seatLocks.id, existingLock[0].id))
+        .returning();
+      return updated[0];
+    }
+    
+    // Create new lock
+    const result = await db
+      .insert(seatLocks)
+      .values({ showId, seatId, userId, expiresAt })
+      .returning();
+    return result[0];
+  }
+
+  async unlockSeat(showId: number, seatId: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(seatLocks)
+      .where(
+        and(
+          eq(seatLocks.showId, showId),
+          eq(seatLocks.seatId, seatId),
+          eq(seatLocks.userId, userId)
+        )
+      )
+      .returning();
+    return result.length > 0;
+  }
+
+  async getLockedSeats(showId: number): Promise<SeatLock[]> {
+    return await db
+      .select()
+      .from(seatLocks)
+      .where(
+        and(
+          eq(seatLocks.showId, showId),
+          gt(seatLocks.expiresAt, new Date())
+        )
+      );
+  }
+
+  async cleanupExpiredLocks(): Promise<number> {
+    const result = await db
+      .delete(seatLocks)
+      .where(lt(seatLocks.expiresAt, new Date()))
+      .returning();
+    return result.length;
+  }
+
+  // Cancellation and refund methods
+  async getBookingById(id: number): Promise<Booking | undefined> {
+    const result = await db.select().from(bookings).where(eq(bookings.id, id));
+    return result[0];
+  }
+
+  async getBookingsByUserId(userId: string): Promise<Booking[]> {
+    return await db.select().from(bookings).where(eq(bookings.userId, userId));
+  }
+
+  async cancelBooking(id: number, refundAmount: number, reason: string): Promise<{ booking: Booking; refund: Refund } | null> {
+    const booking = await this.getBookingById(id);
+    if (!booking || booking.status === "CANCELLED") {
+      return null;
+    }
+
+    // Update booking status
+    const updatedBooking = await db
+      .update(bookings)
+      .set({ status: "CANCELLED" })
+      .where(eq(bookings.id, id))
+      .returning();
+
+    // Create refund record
+    const refund = await db
+      .insert(refunds)
+      .values({
+        bookingId: id,
+        amount: refundAmount.toFixed(2),
+        status: "COMPLETED",
+        reason,
+        processedAt: new Date(),
+      })
+      .returning();
+
+    return { booking: updatedBooking[0], refund: refund[0] };
+  }
+
+  async getRefundByBookingId(bookingId: number): Promise<Refund | undefined> {
+    const result = await db.select().from(refunds).where(eq(refunds.bookingId, bookingId));
     return result[0];
   }
 }

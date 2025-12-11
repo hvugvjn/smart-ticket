@@ -15,9 +15,10 @@ import {
   type BookSeatsRequest,
   bookings,
   seats as seatsTable,
+  seatLocks,
   users,
 } from "@shared/schema";
-import { sql, inArray, and } from "drizzle-orm";
+import { sql, inArray, and, gt } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
@@ -172,6 +173,26 @@ export async function registerRoutes(
           throw new Error("Some seats not found");
         }
 
+        // Check for seat locks by other users
+        const activeLocks = await tx
+          .select()
+          .from(seatLocks)
+          .where(
+            and(
+              sql`${seatLocks.showId} = ${showId}`,
+              inArray(seatLocks.seatId, seatIds),
+              gt(seatLocks.expiresAt, new Date())
+            )
+          );
+        
+        // Filter locks by other users
+        const userIdStr = userId ? String(userId) : null;
+        const otherUserLocks = activeLocks.filter(lock => lock.userId !== userIdStr);
+        if (otherUserLocks.length > 0) {
+          const lockedSeatIds = otherUserLocks.map(l => l.seatId);
+          throw new Error(`Seats locked by another user: ${lockedSeatIds.join(", ")}`);
+        }
+
         const bookedSeatIds = await tx
           .select({ seatIds: bookings.seatIds })
           .from(bookings)
@@ -208,6 +229,19 @@ export async function registerRoutes(
             expiresAt,
           })
           .returning();
+
+        // Clear any locks for seats that are now booked
+        if (userIdStr) {
+          await tx
+            .delete(seatLocks)
+            .where(
+              and(
+                sql`${seatLocks.showId} = ${showId}`,
+                inArray(seatLocks.seatId, seatIds),
+                sql`${seatLocks.userId} = ${userIdStr}`
+              )
+            );
+        }
 
         return booking[0];
       });
@@ -515,6 +549,324 @@ export async function registerRoutes(
       console.log("Updated gender for user", userId, "to", gender);
       res.json({ id: user.id, email: user.email, gender: user.gender });
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============ SEAT LOCKING ENDPOINTS ============
+  
+  // Lock a seat (120 seconds)
+  app.post("/api/shows/:showId/seats/:seatId/lock", async (req, res) => {
+    try {
+      const showId = parseInt(req.params.showId);
+      const seatId = parseInt(req.params.seatId);
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+      
+      const expiresAt = new Date(Date.now() + 120 * 1000); // 120 seconds
+      const lock = await storage.lockSeat(showId, seatId, String(userId), expiresAt);
+      
+      console.log('SEAT LOCK ATTEMPT', { showId, seatId, userId, result: lock ? 'success' : 'failed' });
+      
+      if (!lock) {
+        const locks = await storage.getLockedSeats(showId);
+        const existingLock = locks.find(l => l.seatId === seatId);
+        return res.status(409).json({ 
+          locked: true, 
+          lockedBy: existingLock?.userId,
+          expiresAt: existingLock?.expiresAt 
+        });
+      }
+      
+      // Broadcast lock update via SSE
+      broadcastSeatUpdate(showId);
+      
+      res.json({ locked: true, expiresAt: lock.expiresAt });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Unlock a seat
+  app.post("/api/shows/:showId/seats/:seatId/unlock", async (req, res) => {
+    try {
+      const showId = parseInt(req.params.showId);
+      const seatId = parseInt(req.params.seatId);
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+      
+      const unlocked = await storage.unlockSeat(showId, seatId, String(userId));
+      
+      if (!unlocked) {
+        return res.status(403).json({ error: "Cannot unlock seat - not locked by you" });
+      }
+      
+      console.log('SEAT UNLOCK', { showId, seatId, userId });
+      broadcastSeatUpdate(showId);
+      
+      res.json({ unlocked: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get all locked seats for a show
+  app.get("/api/shows/:showId/locks", async (req, res) => {
+    try {
+      const showId = parseInt(req.params.showId);
+      const locks = await storage.getLockedSeats(showId);
+      
+      res.json(locks.map(l => ({
+        seatId: l.seatId,
+        userId: l.userId.substring(0, 4) + '****', // Mask userId
+        expiresAt: l.expiresAt,
+      })));
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============ CANCELLATION & REFUND ENDPOINTS ============
+  
+  // Get user's bookings
+  app.get("/api/users/:userId/bookings", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const bookingsData = await storage.getBookingsByUserId(userId);
+      
+      // Enrich with show and seat data
+      const enrichedBookings = await Promise.all(
+        bookingsData.map(async (booking) => {
+          const show = await storage.getShow(booking.showId);
+          const seats = await storage.getSeatsByIds(booking.seatIds || []);
+          const refund = await storage.getRefundByBookingId(booking.id);
+          
+          return {
+            ...booking,
+            show,
+            seats,
+            refund,
+          };
+        })
+      );
+      
+      res.json(enrichedBookings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Cancel a booking
+  app.post("/api/bookings/:id/cancel", async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const booking = await storage.getBookingById(bookingId);
+      
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      if (booking.status !== "CONFIRMED") {
+        return res.status(400).json({ error: "Only confirmed bookings can be cancelled" });
+      }
+      
+      // Get show to calculate refund
+      const show = await storage.getShow(booking.showId);
+      if (!show) {
+        return res.status(404).json({ error: "Show not found" });
+      }
+      
+      const departureTime = new Date(show.departureTime).getTime();
+      const now = Date.now();
+      const hoursUntilDeparture = (departureTime - now) / (1000 * 60 * 60);
+      
+      const totalAmount = parseFloat(booking.totalAmount);
+      const cancellationFee = 50;
+      let refundAmount: number;
+      let reason: string;
+      
+      if (hoursUntilDeparture < 2) {
+        // Within 2 hours - non-refundable
+        refundAmount = 0;
+        reason = "Non-refundable (less than 2 hours before departure)";
+      } else if (hoursUntilDeparture < 24) {
+        // Within 24 hours - 50% refund minus fee
+        refundAmount = Math.max(0, (totalAmount * 0.5) - cancellationFee);
+        reason = "Partial refund (less than 24 hours before departure)";
+      } else {
+        // More than 24 hours - full refund minus fee
+        refundAmount = Math.max(0, totalAmount - cancellationFee);
+        reason = "Full refund (more than 24 hours before departure)";
+      }
+      
+      const result = await storage.cancelBooking(bookingId, refundAmount, reason);
+      
+      if (!result) {
+        return res.status(400).json({ error: "Failed to cancel booking" });
+      }
+      
+      console.log('BOOKING_CANCEL', bookingId, { refundAmount, status: 'CANCELLED', reason });
+      
+      // Send cancellation email
+      if (booking.userId) {
+        try {
+          const user = await storage.getUserById(parseInt(booking.userId));
+          if (user?.email) {
+            // TODO: Implement cancellation email
+            console.log('Cancellation email would be sent to', user.email);
+          }
+        } catch (emailErr) {
+          console.error('Failed to send cancellation email', emailErr);
+        }
+      }
+      
+      broadcastSeatUpdate(booking.showId);
+      
+      res.json({
+        bookingId,
+        status: "CANCELLED",
+        refundAmount,
+        reason,
+        refund: result.refund,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============ PDF TICKET ENDPOINT ============
+  
+  app.get("/api/bookings/:id/ticket", async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const booking = await storage.getBookingById(bookingId);
+      
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      if (booking.status !== "CONFIRMED") {
+        return res.status(400).json({ error: "Ticket only available for confirmed bookings" });
+      }
+      
+      const show = await storage.getShow(booking.showId);
+      if (!show) {
+        return res.status(404).json({ error: "Show not found" });
+      }
+      
+      const seats = await storage.getSeatsByIds(booking.seatIds || []);
+      const passenger = booking.passengerDetails as any;
+      
+      let userEmail = "guest@nextravel.com";
+      if (booking.userId) {
+        const user = await storage.getUserById(parseInt(booking.userId));
+        if (user?.email) userEmail = user.email;
+      }
+      
+      // Generate PDF (dynamic imports for ESM compatibility)
+      const PDFDocument = (await import('pdfkit')).default;
+      const QRCode = await import('qrcode');
+      
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="nextravel-ticket-${bookingId}.pdf"`);
+      
+      doc.pipe(res);
+      
+      // Header
+      doc.fontSize(28).fillColor('#7c3aed').text('NexTravel', 50, 50);
+      doc.fontSize(12).fillColor('#666').text('Your Journey Companion', 50, 85);
+      
+      doc.moveTo(50, 110).lineTo(545, 110).stroke('#ddd');
+      
+      // Booking ID
+      doc.fontSize(14).fillColor('#000').text('Booking Confirmation', 50, 130);
+      doc.fontSize(20).fillColor('#06b6d4').text(`#${bookingId}`, 50, 150);
+      
+      // Trip Details
+      doc.fontSize(12).fillColor('#666').text('From', 50, 190);
+      doc.fontSize(16).fillColor('#000').text(show.source, 50, 205);
+      doc.fontSize(12).fillColor('#666').text('To', 300, 190);
+      doc.fontSize(16).fillColor('#000').text(show.destination, 300, 205);
+      
+      // Date and Time
+      const departureDate = new Date(show.departureTime);
+      const arrivalDate = new Date(show.arrivalTime);
+      
+      doc.fontSize(12).fillColor('#666').text('Departure', 50, 250);
+      doc.fontSize(14).fillColor('#000').text(
+        departureDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        50, 265
+      );
+      doc.text(departureDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 50, 282);
+      
+      doc.fontSize(12).fillColor('#666').text('Arrival', 300, 250);
+      doc.fontSize(14).fillColor('#000').text(
+        arrivalDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        300, 265
+      );
+      doc.text(arrivalDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 300, 282);
+      
+      // Operator
+      doc.fontSize(12).fillColor('#666').text('Operator', 50, 320);
+      doc.fontSize(14).fillColor('#000').text(show.operatorName, 50, 335);
+      doc.fontSize(12).fillColor('#666').text(show.vehicleType, 50, 352);
+      
+      // Seats
+      doc.fontSize(12).fillColor('#666').text('Seats', 300, 320);
+      doc.fontSize(14).fillColor('#000').text(seats.map(s => s.seatNumber).join(', '), 300, 335);
+      
+      // Passenger Details
+      doc.moveTo(50, 380).lineTo(545, 380).stroke('#ddd');
+      doc.fontSize(14).fillColor('#000').text('Passenger Details', 50, 400);
+      
+      if (passenger) {
+        doc.fontSize(12).fillColor('#666').text('Email:', 50, 425);
+        doc.fillColor('#000').text(userEmail, 120, 425);
+        
+        doc.fillColor('#666').text('Phone:', 50, 445);
+        doc.fillColor('#000').text(passenger.phone || 'N/A', 120, 445);
+        
+        doc.fillColor('#666').text('ID Type:', 300, 425);
+        doc.fillColor('#000').text(passenger.idType || 'N/A', 370, 425);
+        
+        const maskedId = passenger.idNumber?.length >= 6 
+          ? passenger.idNumber.slice(0, 2) + '****' + passenger.idNumber.slice(-2)
+          : '****';
+        doc.fillColor('#666').text('ID Number:', 300, 445);
+        doc.fillColor('#000').text(maskedId, 380, 445);
+      }
+      
+      // Fare
+      doc.moveTo(50, 480).lineTo(545, 480).stroke('#ddd');
+      doc.fontSize(14).fillColor('#000').text('Total Fare', 50, 500);
+      doc.fontSize(24).fillColor('#16a34a').text(`₹${booking.totalAmount}`, 50, 520);
+      
+      // QR Code
+      const qrData = `https://nextravel.com/bookings/${bookingId}`;
+      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 120, margin: 1 });
+      const qrImageData = qrDataUrl.replace(/^data:image\/png;base64,/, '');
+      doc.image(Buffer.from(qrImageData, 'base64'), 430, 490, { width: 100 });
+      doc.fontSize(10).fillColor('#666').text('Scan for details', 445, 595);
+      
+      // Footer
+      doc.moveTo(50, 640).lineTo(545, 640).stroke('#ddd');
+      doc.fontSize(10).fillColor('#666').text('Thank you for traveling with NexTravel!', 50, 660);
+      doc.text('For support, contact: support@nextravel.com', 50, 675);
+      doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 50, 690);
+      
+      doc.end();
+      
+      console.log('GENERATED PDF', bookingId);
+    } catch (error: any) {
+      console.error('PDF generation error:', error);
       res.status(500).json({ error: error.message });
     }
   });

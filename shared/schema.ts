@@ -57,6 +57,26 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const seatLocks = pgTable("seat_locks", {
+  id: serial("id").primaryKey(),
+  showId: integer("show_id").notNull().references(() => shows.id),
+  seatId: integer("seat_id").notNull().references(() => seats.id),
+  userId: text("user_id").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const refunds = pgTable("refunds", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id").notNull().references(() => bookings.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("INR"),
+  status: text("status").notNull().default("PENDING"),
+  reason: text("reason"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertShowSchema = createInsertSchema(shows).omit({
   id: true,
   createdAt: true,
@@ -87,6 +107,22 @@ export type InsertBooking = z.infer<typeof insertBookingSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export const insertSeatLockSchema = createInsertSchema(seatLocks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRefundSchema = createInsertSchema(refunds).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type SeatLock = typeof seatLocks.$inferSelect;
+export type InsertSeatLock = z.infer<typeof insertSeatLockSchema>;
+
+export type Refund = typeof refunds.$inferSelect;
+export type InsertRefund = z.infer<typeof insertRefundSchema>;
 
 export const passengerDetailsSchema = z.object({
   gender: z.enum(["male", "female", "other"]),
