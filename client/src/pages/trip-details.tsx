@@ -70,7 +70,7 @@ export default function TripDetailsPage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Cancellation Failed",
+        title: t("cancel.failed"),
         description: error.message,
         variant: "destructive",
       });

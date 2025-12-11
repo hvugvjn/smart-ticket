@@ -65,7 +65,11 @@
     "duration": "Duration",
     "seatsAvailable": "seats available",
     "selectSeats": "Select Seats",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "viewSeats": "View Seats",
+    "cheapest": "Cheapest",
+    "fastest": "Fastest",
+    "booked": "booked"
   },
   "booking": {
     "title": "Select Your Seats",
@@ -163,6 +167,7 @@
     "confirmCancel": "Confirm Cancellation",
     "cancelling": "Cancelling...",
     "success": "Booking Cancelled",
+    "failed": "Cancellation Failed",
     "refundProcessed": "Refund has been processed."
   },
   "auth": {

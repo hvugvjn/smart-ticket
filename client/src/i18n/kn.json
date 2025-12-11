@@ -65,7 +65,11 @@
     "duration": "ಅವಧಿ",
     "seatsAvailable": "ಆಸನಗಳು ಲಭ್ಯ",
     "selectSeats": "ಆಸನಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-    "viewDetails": "ವಿವರಗಳನ್ನು ನೋಡಿ"
+    "viewDetails": "ವಿವರಗಳನ್ನು ನೋಡಿ",
+    "viewSeats": "ಆಸನಗಳನ್ನು ನೋಡಿ",
+    "cheapest": "ಅಗ್ಗದ",
+    "fastest": "ವೇಗದ",
+    "booked": "ಬುಕ್ ಆಗಿದೆ"
   },
   "booking": {
     "title": "ನಿಮ್ಮ ಆಸನಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ",
@@ -148,6 +152,7 @@
     "confirmCancel": "ರದ್ದುಮಾಡುವುದನ್ನು ದೃಢೀಕರಿಸಿ",
     "cancelling": "ರದ್ದುಮಾಡುತ್ತಿದೆ...",
     "success": "ಬುಕಿಂಗ್ ರದ್ದಾಗಿದೆ",
+    "failed": "ರದ್ದು ವಿಫಲವಾಯಿತು",
     "refundProcessed": "ಮರುಪಾವತಿ ಪ್ರಕ್ರಿಯೆಗೊಂಡಿದೆ."
   },
   "auth": {

@@ -35,8 +35,8 @@ export default function Home() {
   const handleConfirmBooking = () => {
     if (otp.length < 4) {
       toast({
-        title: "Invalid OTP",
-        description: "Please enter a valid 4-digit code.",
+        title: t("auth.invalidOtp"),
+        description: t("auth.enterOtp"),
         variant: "destructive"
       });
       return;
@@ -44,8 +44,8 @@ export default function Home() {
     
     setBookingStep("success");
     toast({
-      title: "Booking Confirmed! 🚀",
-      description: "Your tickets have been sent to your email.",
+      title: t("booking.confirmTitle"),
+      description: t("ticket.emailSent"),
       className: "bg-green-500/10 border-green-500/20 text-green-500"
     });
   };
@@ -93,10 +93,10 @@ export default function Home() {
         {searchResults && (
           <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-display font-semibold">Available Trips</h2>
+              <h2 className="text-2xl font-display font-semibold">{t("results.title")}</h2>
               <div className="flex gap-2">
-                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">Cheapest</Button>
-                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">Fastest</Button>
+                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">{t("results.cheapest")}</Button>
+                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">{t("results.fastest")}</Button>
               </div>
             </div>
             
@@ -121,7 +121,7 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">{trip.type}</p>
                     <div className="flex gap-3 mt-2">
                       <span className="flex items-center text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded"><Star className="w-3 h-3 mr-1 fill-amber-400" /> {trip.rating}</span>
-                      <span className="flex items-center text-xs text-muted-foreground"><Users className="w-3 h-3 mr-1" /> {trip.totalSeats - trip.seatsAvailable} booked</span>
+                      <span className="flex items-center text-xs text-muted-foreground"><Users className="w-3 h-3 mr-1" /> {trip.totalSeats - trip.seatsAvailable} {t("results.booked")}</span>
                     </div>
                   </div>
 
@@ -155,7 +155,7 @@ export default function Home() {
                         setSelectedSeats([]);
                       }}
                     >
-                      View Seats
+                      {t("results.viewSeats")}
                     </Button>
                   </div>
                 </div>

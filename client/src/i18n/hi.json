@@ -65,7 +65,11 @@
     "duration": "अवधि",
     "seatsAvailable": "सीटें उपलब्ध",
     "selectSeats": "सीटें चुनें",
-    "viewDetails": "विवरण देखें"
+    "viewDetails": "विवरण देखें",
+    "viewSeats": "सीटें देखें",
+    "cheapest": "सबसे सस्ता",
+    "fastest": "सबसे तेज़",
+    "booked": "बुक"
   },
   "booking": {
     "title": "अपनी सीटें चुनें",
@@ -163,6 +167,7 @@
     "confirmCancel": "रद्द करने की पुष्टि करें",
     "cancelling": "रद्द हो रहा है...",
     "success": "बुकिंग रद्द हो गई",
+    "failed": "रद्द करना विफल",
     "refundProcessed": "रिफंड प्रोसेस हो गया।"
   },
   "auth": {

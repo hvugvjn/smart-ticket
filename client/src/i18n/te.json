@@ -65,7 +65,11 @@
     "duration": "వ్యవధి",
     "seatsAvailable": "సీట్లు అందుబాటులో ఉన్నాయి",
     "selectSeats": "సీట్లు ఎంచుకోండి",
-    "viewDetails": "వివరాలు చూడండి"
+    "viewDetails": "వివరాలు చూడండి",
+    "viewSeats": "సీట్లు చూడండి",
+    "cheapest": "చౌకైన",
+    "fastest": "వేగవంతమైన",
+    "booked": "బుక్ అయినది"
   },
   "booking": {
     "title": "మీ సీట్లు ఎంచుకోండి",
@@ -148,6 +152,7 @@
     "confirmCancel": "రద్దు నిర్ధారించండి",
     "cancelling": "రద్దు చేస్తోంది...",
     "success": "బుకింగ్ రద్దు అయింది",
+    "failed": "రద్దు విఫలమైంది",
     "refundProcessed": "రీఫండ్ ప్రాసెస్ అయింది."
   },
   "auth": {
