@@ -1,4 +1,12 @@
-import { useState } from "react";
+/**
+ * home-connected.tsx
+ * Modifications:
+ * - Integrated AuthContext for booking protection
+ * - Changed "Show" to "Trip" in UI text
+ * - Added seat selection preservation for login flow
+ * - Opens OTP modal when unauthenticated user tries to book
+ */
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { SearchHero } from "@/components/modules/SearchHero";
@@ -11,13 +19,13 @@ import { Wifi, Coffee, Battery, ArrowRight, CheckCircle2, Shield, Star, Users } 
 import heroImage from "@assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
 export default function HomeConnected() {
+  const { isAuthenticated, currentUser, setShowOtpModal, setPendingBooking, pendingBooking } = useAuth();
   const [selectedTrip, setSelectedTrip] = useState<Show | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
-  const [bookingStep, setBookingStep] = useState<"seats" | "auth" | "success">("seats");
-  const [phoneNumber, setPhoneNumber] = useState("+15551234599");
-  const [otp, setOtp] = useState("");
+  const [bookingStep, setBookingStep] = useState<"seats" | "processing" | "success">("seats");
   const [currentBookingId, setCurrentBookingId] = useState<number | null>(null);
   
   const queryClient = useQueryClient();
@@ -27,60 +35,55 @@ export default function HomeConnected() {
     queryFn: () => api.getShows(),
   });
 
-  const requestOtpMutation = useMutation({
-    mutationFn: () => api.requestOtp(phoneNumber),
-    onSuccess: () => {
-      toast({
-        title: "OTP Sent",
-        description: "Check the server logs for your OTP code",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const verifyOtpMutation = useMutation({
-    mutationFn: () => api.verifyOtp(phoneNumber, otp),
-    onSuccess: async (data) => {
-      localStorage.setItem("token", data.token);
-      
-      if (currentBookingId) {
-        await api.confirmBooking(currentBookingId);
+  // Resume booking after login
+  useEffect(() => {
+    if (isAuthenticated && pendingBooking && pendingBooking.seatIds.length > 0) {
+      const tripToBook = shows.find(s => s.id === pendingBooking.showId);
+      if (tripToBook) {
+        setSelectedTrip(tripToBook);
+        // Trigger the booking
+        bookSeatsMutation.mutate({
+          showId: pendingBooking.showId,
+          seatIds: pendingBooking.seatIds,
+        });
+        setPendingBooking(null);
       }
-      
-      setBookingStep("success");
-      queryClient.invalidateQueries({ queryKey: ["seats"] });
-      
-      toast({
-        title: "Booking Confirmed! 🚀",
-        description: "Your tickets have been sent to your phone.",
-        className: "bg-green-500/10 border-green-500/20 text-green-500"
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Invalid OTP",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  }, [isAuthenticated, pendingBooking, shows]);
 
   const bookSeatsMutation = useMutation({
-    mutationFn: ({ showId, seatIds }: { showId: number; seatIds: number[] }) => {
+    mutationFn: async ({ showId, seatIds }: { showId: number; seatIds: number[] }) => {
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36)}`;
-      return api.bookSeats(showId, seatIds, idempotencyKey);
+      const booking = await api.bookSeats(showId, seatIds, idempotencyKey);
+      // Auto-confirm for authenticated users
+      if (isAuthenticated) {
+        return await api.confirmBooking(booking.id);
+      }
+      return booking;
     },
     onSuccess: (booking) => {
       setCurrentBookingId(booking.id);
-      setBookingStep("auth");
-      requestOtpMutation.mutate();
+      setBookingStep("success");
       queryClient.invalidateQueries({ queryKey: ["seats"] });
+      
+      // Save to localStorage for My Trips
+      const existingBookings = JSON.parse(localStorage.getItem("userBookings") || "[]");
+      existingBookings.push({
+        ...booking,
+        tripDetails: selectedTrip ? {
+          operatorName: selectedTrip.operatorName,
+          source: selectedTrip.source,
+          destination: selectedTrip.destination,
+          departureTime: selectedTrip.departureTime,
+        } : undefined,
+      });
+      localStorage.setItem("userBookings", JSON.stringify(existingBookings));
+      
+      toast({
+        title: "Booking Confirmed! 🚀",
+        description: "Your tickets have been reserved.",
+        className: "bg-green-500/10 border-green-500/20 text-green-500"
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -93,22 +96,27 @@ export default function HomeConnected() {
 
   const handleBook = () => {
     if (!selectedTrip || selectedSeats.length === 0) return;
+    
+    // If not authenticated, save selection and open OTP modal
+    if (!isAuthenticated) {
+      setPendingBooking({
+        showId: selectedTrip.id,
+        seatIds: selectedSeats.map(s => s.id),
+      });
+      setSelectedTrip(null); // Close sheet
+      setShowOtpModal(true);
+      toast({
+        title: "Login Required",
+        description: "Please login to complete your booking. Your seat selection has been saved.",
+      });
+      return;
+    }
+    
+    setBookingStep("processing");
     bookSeatsMutation.mutate({
       showId: selectedTrip.id,
       seatIds: selectedSeats.map(s => s.id),
     });
-  };
-
-  const handleConfirmBooking = () => {
-    if (otp.length < 4) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter a valid 4-digit code.",
-        variant: "destructive"
-      });
-      return;
-    }
-    verifyOtpMutation.mutate();
   };
 
   return (
@@ -257,34 +265,17 @@ export default function HomeConnected() {
                     </motion.div>
                   )}
 
-                  {bookingStep === "auth" && (
+                  {bookingStep === "processing" && (
                     <motion.div 
-                      key="auth"
+                      key="processing"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6 pt-10"
+                      className="flex flex-col items-center justify-center h-full space-y-6 text-center pt-20"
                     >
-                      <div className="text-center space-y-2">
-                         <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                            <Shield className="w-8 h-8" />
-                         </div>
-                         <h3 className="text-xl font-bold">Verify Identity</h3>
-                         <p className="text-sm text-muted-foreground">OTP sent to {phoneNumber}</p>
-                         <p className="text-xs text-muted-foreground/50">Check server logs for OTP</p>
-                      </div>
-
-                      <div className="max-w-xs mx-auto space-y-4">
-                        <input 
-                           data-testid="input-otp"
-                           type="text" 
-                           placeholder="0000"
-                           className="w-full text-center text-4xl tracking-[1em] font-mono bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-4 transition-colors"
-                           maxLength={4}
-                           value={otp}
-                           onChange={(e) => setOtp(e.target.value)}
-                        />
-                      </div>
+                      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      <h3 className="text-xl font-bold">Processing Booking...</h3>
+                      <p className="text-sm text-muted-foreground">Please wait while we reserve your seats</p>
                     </motion.div>
                   )}
 
@@ -320,35 +311,29 @@ export default function HomeConnected() {
                 </AnimatePresence>
               </div>
 
-              {bookingStep !== "success" && (
+              {bookingStep === "seats" && (
                 <SheetFooter className="p-6 border-t border-white/10 flex-col gap-4 sm:flex-col">
-                  {bookingStep === "seats" ? (
-                    <div className="w-full space-y-4">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">{selectedSeats.length} seats selected</span>
-                        <span className="text-xl font-bold font-display text-primary">
-                          ${selectedSeats.reduce((acc, s) => acc + parseFloat(s.price), 0).toFixed(2)}
-                        </span>
-                      </div>
-                      <Button 
-                        data-testid="button-proceed-book"
-                        className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                        disabled={selectedSeats.length === 0 || bookSeatsMutation.isPending}
-                        onClick={handleBook}
-                      >
-                        {bookSeatsMutation.isPending ? "Booking..." : "Proceed to Book"}
-                      </Button>
+                  <div className="w-full space-y-4">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{selectedSeats.length} seats selected</span>
+                      <span className="text-xl font-bold font-display text-primary">
+                        ${selectedSeats.reduce((acc, s) => acc + parseFloat(s.price), 0).toFixed(2)}
+                      </span>
                     </div>
-                  ) : (
                     <Button 
-                      data-testid="button-confirm-booking"
+                      data-testid="button-proceed-book"
                       className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                      onClick={handleConfirmBooking}
-                      disabled={verifyOtpMutation.isPending}
+                      disabled={selectedSeats.length === 0 || bookSeatsMutation.isPending}
+                      onClick={handleBook}
                     >
-                      {verifyOtpMutation.isPending ? "Confirming..." : "Confirm Booking"}
+                      {bookSeatsMutation.isPending ? "Booking..." : isAuthenticated ? "Confirm Booking" : "Login & Book"}
                     </Button>
-                  )}
+                    {!isAuthenticated && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        You'll be prompted to login before completing your booking
+                      </p>
+                    )}
+                  </div>
                 </SheetFooter>
               )}
             </div>

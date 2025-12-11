@@ -1,3 +1,9 @@
+/**
+ * admin-connected.tsx
+ * Modifications:
+ * - Changed all "Show/Shows" terminology to "Trip/Trips"
+ * - Updated headings, labels, and toast messages
+ */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
@@ -15,12 +21,12 @@ export default function AdminConnected() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: shows = [] } = useQuery({
+  const { data: trips = [] } = useQuery({
     queryKey: ["shows"],
     queryFn: () => api.getShows(),
   });
 
-  const createShowMutation = useMutation({
+  const createTripMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const departureTime = new Date(formData.get("departureTime") as string);
       const arrivalTime = new Date(formData.get("arrivalTime") as string);
@@ -43,15 +49,15 @@ export default function AdminConnected() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to create show");
+      if (!res.ok) throw new Error("Failed to create trip");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shows"] });
       setIsCreateOpen(false);
       toast({
-        title: "Show Created",
-        description: "New show has been added successfully",
+        title: "Trip Created",
+        description: "New trip has been added successfully",
       });
     },
     onError: (error: Error) => {
@@ -63,10 +69,10 @@ export default function AdminConnected() {
     },
   });
 
-  const handleCreateShow = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateTrip = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    createShowMutation.mutate(formData);
+    createTripMutation.mutate(formData);
   };
 
   return (
@@ -77,23 +83,23 @@ export default function AdminConnected() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage shows and view operations.</p>
+            <p className="text-muted-foreground">Manage trips and view operations.</p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="button-add-show" className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button data-testid="button-add-trip" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Show
+                Add Trip
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-background border-white/10 max-w-md">
               <DialogHeader>
-                <DialogTitle>Create New Show</DialogTitle>
+                <DialogTitle>Create New Trip</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleCreateShow} className="space-y-4">
+              <form onSubmit={handleCreateTrip} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="operatorName">Operator Name</Label>
+                    <Label htmlFor="operatorName">Operator / Route Name</Label>
                     <Input id="operatorName" name="operatorName" required placeholder="NeuBus Premium" />
                   </div>
                   <div className="space-y-2">
@@ -144,8 +150,8 @@ export default function AdminConnected() {
                   <Input id="amenities" name="amenities" placeholder="WiFi, Water Bottle, Charging Point" />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={createShowMutation.isPending}>
-                  {createShowMutation.isPending ? "Creating..." : "Create Show"}
+                <Button type="submit" className="w-full" disabled={createTripMutation.isPending}>
+                  {createTripMutation.isPending ? "Creating..." : "Create Trip"}
                 </Button>
               </form>
             </DialogContent>
@@ -155,32 +161,32 @@ export default function AdminConnected() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="glass-card border-white/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Shows</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Trips</CardTitle>
               <Bus className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-display">{shows.length}</div>
-              <p className="text-xs text-muted-foreground">Active trips available</p>
+              <div className="text-2xl font-bold font-display">{trips.length}</div>
+              <p className="text-xs text-muted-foreground">Active routes available</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-xl font-display font-bold">All Shows</h3>
+          <h3 className="text-xl font-display font-bold">All Trips</h3>
           <div className="grid grid-cols-1 gap-4">
-            {shows.map((show) => (
-              <Card key={show.id} className="glass-card border-white/5" data-testid={`show-card-${show.id}`}>
+            {trips.map((trip) => (
+              <Card key={trip.id} className="glass-card border-white/5" data-testid={`trip-card-${trip.id}`}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle>{show.operatorName}</CardTitle>
+                      <CardTitle>{trip.operatorName}</CardTitle>
                       <CardDescription>
-                        {show.source} → {show.destination}
+                        {trip.source} → {trip.destination}
                       </CardDescription>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">${show.price}</p>
-                      <p className="text-xs text-muted-foreground">{show.totalSeats} seats</p>
+                      <p className="text-2xl font-bold text-primary">${trip.price}</p>
+                      <p className="text-xs text-muted-foreground">{trip.totalSeats} seats</p>
                     </div>
                   </div>
                 </CardHeader>
@@ -188,19 +194,19 @@ export default function AdminConnected() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Departure</p>
-                      <p className="font-medium">{format(new Date(show.departureTime), "PPp")}</p>
+                      <p className="font-medium">{format(new Date(trip.departureTime), "PPp")}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Arrival</p>
-                      <p className="font-medium">{format(new Date(show.arrivalTime), "PPp")}</p>
+                      <p className="font-medium">{format(new Date(trip.arrivalTime), "PPp")}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Duration</p>
-                      <p className="font-medium">{show.duration}</p>
+                      <p className="font-medium">{trip.duration}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Vehicle</p>
-                      <p className="font-medium">{show.vehicleType}</p>
+                      <p className="font-medium">{trip.vehicleType}</p>
                     </div>
                   </div>
                 </CardContent>

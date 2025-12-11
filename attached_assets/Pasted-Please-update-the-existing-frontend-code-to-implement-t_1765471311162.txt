@@ -1,0 +1,60 @@
+Please update the existing frontend code to implement the following fixes and UX improvements. Do not change the visual design; only update code and behaviors described below.
+
+1) Global terminology:
+   - Replace the word "Show" and "Shows" with "Trip" and "Trips" across the UI and component labels. Update Admin dashboard headings, list cards, buttons, and page titles (e.g., "All Shows" -> "All Trips", "Add Show" -> "Add Trip").
+   - Keep internal variable names as-is if you prefer, but update displayed text.
+
+2) Login / OTP gating for booking:
+   - Add an AuthContext (if not present) or update existing auth context to expose: isAuthenticated, currentUser, loginWithOtpFlow(), logout().
+   - When a user clicks any "Book" / "Select Seats" CTA on the trip listing or seat map and is NOT authenticated:
+       • Open the existing OTP login modal (or create one at /components/OtpModal.tsx).
+       • After OTP verify success, close the modal and automatically resume the booking flow where the user left off (return to /booking/:id with the same selected seats).
+   - If user is authenticated, proceed directly to booking as before.
+
+3) Protect booking route:
+   - Implement a client-side protected-wrapper or check on the booking page:
+       • If not authenticated, redirect (or open OTP modal) and preserve intended action (selected seats).
+       • If authenticated, show booking UI.
+
+4) My Trips & Support links:
+   - Wire the nav links:
+       • "My Trips" should navigate to `/my-trips` and show a list of bookings for the current user (use real API `GET /api/bookings?userId=<id>` if backend available, otherwise use front-end mock using localStorage).
+       • "Support" should open a modal (SupportModal) with a simple contact form and a mailto fallback.
+   - Ensure the Login button opens OTP flow and shows a small user badge after login.
+
+5) Tick button & accessibility:
+   - Ensure the small tick/check button (top-right) has an accessible aria-label and tooltip. If it indicates verification, change title to "Verified account" and show tooltip on hover.
+
+6) Text and breadcrumb updates:
+   - Update breadcrumbs and page titles to use "Trip" or "Travel" (e.g., "Admin Dashboard → Manage Trips").
+   - Change any references in admin forms from "Show Name" to "Trip / Route Name".
+
+7) Persist selection & resume:
+   - When user selects seats and then is prompted to login, save the selection in client state (Context or localStorage) so after login the selection is restored and user can confirm booking immediately.
+
+8) Minimal tests:
+   - Add one basic front-end unit/integration test that:
+       • Simulates clicking Book while unauthenticated,
+       • Verifies OTP modal opens,
+       • Verifies that after "mock success" the booking page shows selected seats preserved.
+
+9) Developer notes:
+   - Add a short comment at top of changed files listing the modifications (so reviewers see intentional changes).
+   - Do not change styling; only behavior, labels and small accessibility improvements.
+
+Files likely to change (search & update if names differ):
+- client/src/pages/home.tsx
+- client/src/pages/admin.tsx
+- client/src/pages/booking/[id].tsx or client/src/pages/booking.tsx
+- client/src/components/Header.tsx or NavBar.tsx
+- client/src/context/AuthContext.tsx (create if missing)
+- client/src/components/OtpModal.tsx (create if missing)
+- client/src/pages/my-trips.tsx (create)
+- client/src/components/SupportModal.tsx (create)
+
+Please implement the above changes and then:
+1) Show me the updated file list and the diff summary.
+2) Confirm that clicking Book as an unauthenticated user opens OTP modal and preserves seat selection after login.
+3) Show screenshots or console logs proving My Trips page loads and Booking resumes.
+
+Start implementing now.
