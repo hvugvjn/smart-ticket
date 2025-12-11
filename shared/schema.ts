@@ -79,6 +79,15 @@ export const refunds = pgTable("refunds", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const seatNotifications = pgTable("seat_notifications", {
+  id: serial("id").primaryKey(),
+  showId: integer("show_id").notNull().references(() => shows.id),
+  seatNumber: text("seat_number").notNull(),
+  email: text("email").notNull(),
+  notified: text("notified").notNull().default("false"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertShowSchema = createInsertSchema(shows).omit({
   id: true,
   createdAt: true,
@@ -120,11 +129,25 @@ export const insertRefundSchema = createInsertSchema(refunds).omit({
   createdAt: true,
 });
 
+export const insertSeatNotificationSchema = createInsertSchema(seatNotifications).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type SeatLock = typeof seatLocks.$inferSelect;
 export type InsertSeatLock = z.infer<typeof insertSeatLockSchema>;
 
 export type Refund = typeof refunds.$inferSelect;
 export type InsertRefund = z.infer<typeof insertRefundSchema>;
+
+export type SeatNotification = typeof seatNotifications.$inferSelect;
+export type InsertSeatNotification = z.infer<typeof insertSeatNotificationSchema>;
+
+export const notifySeatSchema = z.object({
+  showId: z.number(),
+  seatNumber: z.string(),
+  email: z.string().email(),
+});
 
 export const passengerDetailsSchema = z.object({
   gender: z.enum(["male", "female", "other"]),

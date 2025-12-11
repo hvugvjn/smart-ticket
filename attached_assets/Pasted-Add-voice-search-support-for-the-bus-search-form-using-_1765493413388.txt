@@ -1,0 +1,103 @@
+Add voice search support for the bus search form using the Web Speech API.
+
+Implement the following:
+
+1. Add a microphone icon inside both dropdowns:
+   - FROM location input  
+   - TO location input  
+
+2. When the user clicks the microphone icon:
+   - Start listening using `SpeechRecognition` (webkitSpeechRecognition fallback).
+   - Recognize city names like: Mumbai, Delhi, Bengaluru, Chennai, Hyderabad, Pune, Jaipur, etc.
+   - Auto-fill the input with the recognized city.
+   - Close the dropdown and select the matching city.
+
+3. If recognition fails:
+   Show a toast: “Couldn’t understand. Please try again.”
+
+4. Add a small pulsing animation on the mic icon while listening.
+
+5. Add fallback message for unsupported browsers.
+
+Here is the component code to integrate:
+
+---------------------------------------------------
+
+Add this hook in the component:
+
+const useVoiceInput = (onResult) => {
+  const startListening = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice search not supported on this browser");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      onResult(transcript);
+    };
+
+    recognition.onerror = () => {
+      toast.error("Couldn't understand. Please try again.");
+    };
+
+    recognition.start();
+  };
+
+  return { startListening };
+};
+
+---------------------------------------------------
+
+When microphone icon is clicked:
+
+const { startListening } = useVoiceInput((spokenText) => {
+  const cities = ["mumbai","delhi","bengaluru","chennai","hyderabad",
+                  "pune","ahmedabad","jaipur","lucknow","kolkata"];
+
+  const matched = cities.find(c => spokenText.includes(c));
+
+  if (matched) {
+    setSelectedCity(matched);
+    toast.success(`Selected: ${matched}`);
+  } else {
+    toast.error("City not recognized");
+  }
+});
+
+---------------------------------------------------
+
+Add microphone icon button:
+
+<button onClick={startListening} className="voice-btn">
+  <MicIcon />
+</button>
+
+Add CSS:
+
+.voice-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #00e0ff;
+}
+.voice-btn.listening {
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+---------------------------------------------------
+
+This enables full voice search for city selection.
