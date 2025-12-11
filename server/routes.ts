@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
+import { sendOtpEmail } from "./lib/mail";
 import { 
   bookSeatsSchema, 
   requestOtpSchema, 
@@ -369,7 +370,17 @@ export async function registerRoutes(
 
       await storage.updateUserOtpByEmail(email, otp, expiresAt);
 
-      console.log(`📧 OTP for ${email}: ${otp}`);
+      // Send OTP via email if SMTP is configured, otherwise log to console
+      if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+        try {
+          await sendOtpEmail(email, otp);
+        } catch (emailError: any) {
+          console.error(`Failed to send OTP email: ${emailError.message}`);
+          console.log(`📧 OTP for ${email}: ${otp} (email failed, check SMTP settings)`);
+        }
+      } else {
+        console.log(`📧 OTP for ${email}: ${otp} (SMTP not configured)`);
+      }
 
       res.json({ message: "OTP sent successfully" });
     } catch (error: any) {
