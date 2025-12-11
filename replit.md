@@ -51,10 +51,17 @@ Core database tables:
 - `users` - User accounts with phone number and OTP verification fields
 
 ### Authentication
-- **Method**: Mobile OTP (4-6 digit codes)
-- **Token**: JWT stored in HttpOnly cookies
+- **Method**: Email OTP (6-digit codes)
+- **Token**: JWT with role-based access control
 - **Rate Limiting**: 3 OTP attempts per 10 minutes with cooldown
 - **OTP Expiry**: 2-3 minutes
+
+### Role-Based Access Control
+- **Roles**: `user` (default) and `admin`
+- **Admin Account**: admin@nextravel.com (hardcoded in database)
+- **Frontend Protection**: Admin menu hidden for non-admin users, route guard on /admin page
+- **Backend Protection**: `requireAdmin` middleware protects /api/admin/* routes
+- **JWT**: Includes role claim for authorization checks
 
 ### High-Concurrency Booking
 The booking engine uses:
