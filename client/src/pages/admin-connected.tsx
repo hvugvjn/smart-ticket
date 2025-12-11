@@ -2,7 +2,8 @@
  * admin-connected.tsx
  * Modifications:
  * - Changed all "Show/Shows" terminology to "Trip/Trips"
- * - Updated headings, labels, and toast messages
+ * - Changed currency from USD to INR
+ * - Updated labels and default values
  */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,9 +17,13 @@ import { api, type Show } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { Bus, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { formatINR } from "@/lib/currency";
+import { LocationSelect, INDIAN_CITIES } from "@/components/LocationSelect";
 
 export default function AdminConnected() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [source, setSource] = useState("Mumbai");
+  const [destination, setDestination] = useState("Bengaluru");
   const queryClient = useQueryClient();
 
   const { data: trips = [] } = useQuery({
@@ -36,8 +41,8 @@ export default function AdminConnected() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operatorName: formData.get("operatorName"),
-          source: formData.get("source"),
-          destination: formData.get("destination"),
+          source,
+          destination,
           departureTime: departureTime.toISOString(),
           arrivalTime: arrivalTime.toISOString(),
           duration: formData.get("duration"),
@@ -110,12 +115,22 @@ export default function AdminConnected() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="source">Source</Label>
-                    <Input id="source" name="source" required placeholder="New York" />
+                    <Label>Source City</Label>
+                    <LocationSelect
+                      value={source}
+                      onChange={setSource}
+                      placeholder="Select source"
+                      excludeCity={destination}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="destination">Destination</Label>
-                    <Input id="destination" name="destination" required placeholder="Boston" />
+                    <Label>Destination City</Label>
+                    <LocationSelect
+                      value={destination}
+                      onChange={setDestination}
+                      placeholder="Select destination"
+                      excludeCity={source}
+                    />
                   </div>
                 </div>
 
@@ -133,11 +148,11 @@ export default function AdminConnected() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="duration">Duration</Label>
-                    <Input id="duration" name="duration" required placeholder="4h 00m" />
+                    <Input id="duration" name="duration" required placeholder="6h 00m" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price ($)</Label>
-                    <Input id="price" name="price" type="number" step="0.01" required placeholder="45.00" />
+                    <Label htmlFor="price">Price (INR)</Label>
+                    <Input id="price" name="price" type="number" step="1" required placeholder="1800" defaultValue="1800" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="totalSeats">Total Seats</Label>
@@ -185,7 +200,7 @@ export default function AdminConnected() {
                       </CardDescription>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">${trip.price}</p>
+                      <p className="text-2xl font-bold text-primary">{formatINR(trip.price)}</p>
                       <p className="text-xs text-muted-foreground">{trip.totalSeats} seats</p>
                     </div>
                   </div>

@@ -1,18 +1,19 @@
 /**
  * my-trips.tsx
  * Modifications:
- * - Created new page for viewing user's booking history
- * - Fetches bookings from API or shows mock data from localStorage
+ * - Updated for email-based authentication
+ * - Added INR currency formatting
  */
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { format } from "date-fns";
-import { Ticket, Calendar, MapPin, ArrowRight, Clock, CheckCircle2, XCircle, Timer } from "lucide-react";
+import { Ticket, Calendar, MapPin, ArrowRight, CheckCircle2, XCircle, Timer } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatINR } from "@/lib/currency";
 
 interface BookingRecord {
   id: number;
@@ -31,32 +32,29 @@ interface BookingRecord {
 
 export default function MyTrips() {
   const { isAuthenticated, currentUser, setShowOtpModal } = useAuth();
-  const [, navigate] = useLocation();
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       setShowOtpModal(true);
+      setLoading(false);
       return;
     }
 
     const fetchBookings = async () => {
       try {
-        // Try to fetch from API
-        const res = await fetch(`/api/bookings?userId=${currentUser?.phoneNumber}`);
+        const res = await fetch(`/api/bookings?userId=${currentUser?.email}`);
         if (res.ok) {
           const data = await res.json();
           setBookings(data);
         } else {
-          // Fallback to localStorage mock data
           const mockBookings = localStorage.getItem("userBookings");
           if (mockBookings) {
             setBookings(JSON.parse(mockBookings));
           }
         }
       } catch {
-        // Use localStorage fallback
         const mockBookings = localStorage.getItem("userBookings");
         if (mockBookings) {
           setBookings(JSON.parse(mockBookings));
@@ -166,7 +164,7 @@ export default function MyTrips() {
                               {booking.tripDetails.destination}
                             </>
                           ) : (
-                            `Show ID: ${booking.showId}`
+                            `Trip ID: ${booking.showId}`
                           )}
                         </CardDescription>
                       </div>
@@ -191,7 +189,7 @@ export default function MyTrips() {
                       </div>
                       <div>
                         <p className="text-muted-foreground">Total Paid</p>
-                        <p className="font-medium text-primary">${booking.totalAmount}</p>
+                        <p className="font-medium text-primary">{formatINR(booking.totalAmount)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Booking ID</p>

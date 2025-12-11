@@ -6,10 +6,13 @@ import {
   bookSeatsSchema, 
   requestOtpSchema, 
   verifyOtpSchema,
+  requestOtpEmailSchema,
+  verifyOtpEmailSchema,
   insertShowSchema,
   type BookSeatsRequest,
   bookings,
   seats as seatsTable,
+  users,
 } from "@shared/schema";
 import { sql, inArray, and } from "drizzle-orm";
 import jwt from "jsonwebtoken";
@@ -326,6 +329,93 @@ export async function registerRoutes(
         sseClients.splice(index, 1);
       }
     });
+  });
+
+  // Email OTP endpoints
+  app.post("/api/auth/request-otp-email", async (req, res) => {
+    try {
+      const parsed = requestOtpEmailSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors });
+      }
+
+      const { email } = parsed.data;
+
+      let user = await storage.getUserByEmail(email);
+      
+      if (user) {
+        if (user.otpAttempts >= 3 && user.lastOtpRequestAt) {
+          const timeSinceLastRequest = Date.now() - new Date(user.lastOtpRequestAt).getTime();
+          if (timeSinceLastRequest < 10 * 60 * 1000) {
+            return res.status(429).json({ 
+              message: "Too many attempts. Please try again in 10 minutes." 
+            });
+          } else {
+            await storage.resetOtpAttemptsByEmail(email);
+          }
+        }
+      } else {
+        user = await storage.createUserWithEmail({ 
+          email, 
+          otp: null, 
+          otpExpiresAt: null,
+          otpAttempts: 0,
+          lastOtpRequestAt: null,
+        });
+      }
+
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+
+      await storage.updateUserOtpByEmail(email, otp, expiresAt);
+
+      console.log(`📧 OTP for ${email}: ${otp}`);
+
+      res.json({ message: "OTP sent successfully" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/auth/verify-otp-email", async (req, res) => {
+    try {
+      const parsed = verifyOtpEmailSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request" });
+      }
+
+      const { email, code } = parsed.data;
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!user.otp || !user.otpExpiresAt) {
+        return res.status(400).json({ message: "No OTP requested" });
+      }
+
+      if (new Date() > new Date(user.otpExpiresAt)) {
+        return res.status(400).json({ message: "OTP expired" });
+      }
+
+      if (user.otp !== code) {
+        await storage.incrementOtpAttemptsByEmail(email);
+        return res.status(400).json({ message: "Invalid OTP" });
+      }
+
+      await storage.resetOtpAttemptsByEmail(email);
+
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.json({ token, user: { id: user.id, email: user.email } });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   return httpServer;

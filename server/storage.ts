@@ -36,6 +36,13 @@ export interface IStorage {
   updateUserOtp(phoneNumber: string, otp: string, expiresAt: Date): Promise<User | undefined>;
   incrementOtpAttempts(phoneNumber: string): Promise<void>;
   resetOtpAttempts(phoneNumber: string): Promise<void>;
+  
+  // Email-based auth
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUserWithEmail(user: { email: string; otp: string | null; otpExpiresAt: Date | null; otpAttempts: number; lastOtpRequestAt: Date | null }): Promise<User>;
+  updateUserOtpByEmail(email: string, otp: string, expiresAt: Date): Promise<User | undefined>;
+  incrementOtpAttemptsByEmail(email: string): Promise<void>;
+  resetOtpAttemptsByEmail(email: string): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -151,6 +158,40 @@ export class PostgresStorage implements IStorage {
       .update(users)
       .set({ otpAttempts: 0 })
       .where(eq(users.phoneNumber, phoneNumber));
+  }
+
+  // Email-based auth methods
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0];
+  }
+
+  async createUserWithEmail(user: { email: string; otp: string | null; otpExpiresAt: Date | null; otpAttempts: number; lastOtpRequestAt: Date | null }): Promise<User> {
+    const result = await db.insert(users).values(user).returning();
+    return result[0];
+  }
+
+  async updateUserOtpByEmail(email: string, otp: string, expiresAt: Date): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ otp, otpExpiresAt: expiresAt, lastOtpRequestAt: new Date() })
+      .where(eq(users.email, email))
+      .returning();
+    return result[0];
+  }
+
+  async incrementOtpAttemptsByEmail(email: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ otpAttempts: sql`${users.otpAttempts} + 1` })
+      .where(eq(users.email, email));
+  }
+
+  async resetOtpAttemptsByEmail(email: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ otpAttempts: 0 })
+      .where(eq(users.email, email));
   }
 }
 

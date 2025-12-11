@@ -1,16 +1,20 @@
+/**
+ * SearchHero.tsx
+ * Modifications:
+ * - Replaced text inputs with LocationSelect dropdown for Indian cities
+ * - Updated date picker with proper constraints
+ * - Changed default placeholders to Indian cities
+ */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, MapPin, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import { LocationSelect } from "@/components/LocationSelect";
+import { DatePickerInput } from "@/components/DatePickerInput";
 
 export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
   const [date, setDate] = useState<Date>();
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useState("Mumbai");
+  const [to, setTo] = useState("Bengaluru");
 
   const handleSearch = () => {
     onSearch({ from, to, date });
@@ -24,57 +28,33 @@ export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
           {/* FROM */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground ml-1">FROM</label>
-            <div className="relative group">
-              <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="New York" 
-                className="pl-9 h-12 bg-white/5 border-white/10 focus:border-primary/50 focus:ring-primary/20 transition-all font-medium text-lg"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </div>
+            <LocationSelect
+              value={from}
+              onChange={setFrom}
+              placeholder="Select departure city"
+              excludeCity={to}
+            />
           </div>
 
           {/* TO */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground ml-1">TO</label>
-            <div className="relative group">
-              <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="Boston" 
-                className="pl-9 h-12 bg-white/5 border-white/10 focus:border-primary/50 focus:ring-primary/20 transition-all font-medium text-lg"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
-            </div>
+            <LocationSelect
+              value={to}
+              onChange={setTo}
+              placeholder="Select destination city"
+              excludeCity={from}
+            />
           </div>
 
           {/* DATE */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground ml-1">DATE</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full h-12 justify-start text-left font-normal bg-white/5 border-white/10 hover:bg-white/10 hover:text-white transition-all text-lg",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                  className="bg-card text-foreground"
-                />
-              </PopoverContent>
-            </Popover>
+            <DatePickerInput
+              value={date}
+              onChange={setDate}
+              placeholder="Pick a date"
+            />
           </div>
         </div>
 

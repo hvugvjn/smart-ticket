@@ -2,8 +2,7 @@
  * home-connected.tsx
  * Modifications:
  * - Integrated AuthContext for booking protection
- * - Changed "Show" to "Trip" in UI text
- * - Added seat selection preservation for login flow
+ * - Changed all currency from USD to INR
  * - Opens OTP modal when unauthenticated user tries to book
  */
 import { useState, useEffect } from "react";
@@ -15,11 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { SeatMapConnected } from "@/components/modules/SeatMapConnected";
 import { format, parseISO } from "date-fns";
-import { Wifi, Coffee, Battery, ArrowRight, CheckCircle2, Shield, Star, Users } from "lucide-react";
+import { Wifi, Coffee, Battery, ArrowRight, CheckCircle2, Star, Users } from "lucide-react";
 import heroImage from "@assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import { formatINR } from "@/lib/currency";
 
 export default function HomeConnected() {
   const { isAuthenticated, currentUser, setShowOtpModal, setPendingBooking, pendingBooking } = useAuth();
@@ -41,7 +41,6 @@ export default function HomeConnected() {
       const tripToBook = shows.find(s => s.id === pendingBooking.showId);
       if (tripToBook) {
         setSelectedTrip(tripToBook);
-        // Trigger the booking
         bookSeatsMutation.mutate({
           showId: pendingBooking.showId,
           seatIds: pendingBooking.seatIds,
@@ -55,7 +54,6 @@ export default function HomeConnected() {
     mutationFn: async ({ showId, seatIds }: { showId: number; seatIds: number[] }) => {
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36)}`;
       const booking = await api.bookSeats(showId, seatIds, idempotencyKey);
-      // Auto-confirm for authenticated users
       if (isAuthenticated) {
         return await api.confirmBooking(booking.id);
       }
@@ -66,7 +64,6 @@ export default function HomeConnected() {
       setBookingStep("success");
       queryClient.invalidateQueries({ queryKey: ["seats"] });
       
-      // Save to localStorage for My Trips
       const existingBookings = JSON.parse(localStorage.getItem("userBookings") || "[]");
       existingBookings.push({
         ...booking,
@@ -97,13 +94,12 @@ export default function HomeConnected() {
   const handleBook = () => {
     if (!selectedTrip || selectedSeats.length === 0) return;
     
-    // If not authenticated, save selection and open OTP modal
     if (!isAuthenticated) {
       setPendingBooking({
         showId: selectedTrip.id,
         seatIds: selectedSeats.map(s => s.id),
       });
-      setSelectedTrip(null); // Close sheet
+      setSelectedTrip(null);
       setShowOtpModal(true);
       toast({
         title: "Login Required",
@@ -206,7 +202,7 @@ export default function HomeConnected() {
                   </div>
 
                   <div className="md:col-span-3 flex flex-col items-end gap-2">
-                    <p className="text-2xl font-bold font-display text-primary">${trip.price}</p>
+                    <p className="text-2xl font-bold font-display text-primary">{formatINR(trip.price)}</p>
                     <Button 
                       data-testid={`view-seats-${trip.id}`}
                       className="w-full bg-white/10 hover:bg-primary hover:text-primary-foreground text-foreground border border-white/10 transition-all duration-300"
@@ -303,7 +299,7 @@ export default function HomeConnected() {
                          </div>
                          <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">Total</span>
-                            <span className="text-primary font-bold">${selectedSeats.reduce((a,b) => a + parseFloat(b.price), 0).toFixed(2)}</span>
+                            <span className="text-primary font-bold">{formatINR(selectedSeats.reduce((a,b) => a + parseFloat(b.price), 0))}</span>
                          </div>
                       </div>
                     </motion.div>
@@ -317,7 +313,7 @@ export default function HomeConnected() {
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">{selectedSeats.length} seats selected</span>
                       <span className="text-xl font-bold font-display text-primary">
-                        ${selectedSeats.reduce((acc, s) => acc + parseFloat(s.price), 0).toFixed(2)}
+                        {formatINR(selectedSeats.reduce((acc, s) => acc + parseFloat(s.price), 0))}
                       </span>
                     </div>
                     <Button 

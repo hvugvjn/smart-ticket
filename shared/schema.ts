@@ -45,7 +45,8 @@ export const bookings = pgTable("bookings", {
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  phoneNumber: text("phone_number").notNull().unique(),
+  phoneNumber: text("phone_number").unique(),
+  email: text("email").unique(),
   otp: text("otp"),
   otpExpiresAt: timestamp("otp_expires_at"),
   otpAttempts: integer("otp_attempts").notNull().default(0),
@@ -99,6 +100,17 @@ export const verifyOtpSchema = z.object({
   otp: z.string().length(4),
 });
 
+export const requestOtpEmailSchema = z.object({
+  email: z.string().email(),
+});
+
+export const verifyOtpEmailSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(4),
+});
+
 export type BookSeatsRequest = z.infer<typeof bookSeatsSchema>;
 export type RequestOtpRequest = z.infer<typeof requestOtpSchema>;
 export type VerifyOtpRequest = z.infer<typeof verifyOtpSchema>;
+export type RequestOtpEmailRequest = z.infer<typeof requestOtpEmailSchema>;
+export type VerifyOtpEmailRequest = z.infer<typeof verifyOtpEmailSchema>;

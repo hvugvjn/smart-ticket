@@ -1,16 +1,14 @@
 /**
  * AuthContext.tsx
  * Modifications:
- * - Created new file for authentication state management
- * - Provides isAuthenticated, currentUser, loginWithOtpFlow, logout
+ * - Updated for email-based OTP authentication (instead of phone)
  * - Manages pending booking state for resuming after login
  */
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { api } from "@/lib/api";
 
 interface User {
   id: number;
-  phoneNumber: string;
+  email: string;
 }
 
 interface PendingBooking {
@@ -28,8 +26,8 @@ interface AuthContextType {
   logout: () => void;
   showOtpModal: boolean;
   setShowOtpModal: (show: boolean) => void;
-  phoneNumber: string;
-  setPhoneNumber: (phone: string) => void;
+  email: string;
+  setEmail: (email: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return pending ? JSON.parse(pending) : null;
   });
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("+15551234599");
+  const [email, setEmail] = useState("user@example.com");
 
   const isAuthenticated = !!token && !!currentUser;
 
@@ -86,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         showOtpModal,
         setShowOtpModal,
-        phoneNumber,
-        setPhoneNumber,
+        email,
+        setEmail,
       }}
     >
       {children}

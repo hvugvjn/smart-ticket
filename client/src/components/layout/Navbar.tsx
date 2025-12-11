@@ -1,11 +1,8 @@
 /**
  * Navbar.tsx
  * Modifications:
- * - Integrated AuthContext for authentication state
- * - Connected My Trips and Support links
- * - Added user badge when authenticated
- * - Added accessibility improvements to shield icon
- * - Changed "Login" button to show user phone when logged in
+ * - Updated for email-based authentication
+ * - Shows user email when authenticated
  */
 import { useState } from "react";
 import { Link } from "wouter";
@@ -89,12 +86,12 @@ export function Navbar() {
                   data-testid="button-user-menu"
                 >
                   <User className="w-4 h-4 mr-2" />
-                  {currentUser?.phoneNumber?.slice(-4)}
+                  {currentUser?.email?.split("@")[0]}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-popover border-border">
                 <DropdownMenuItem className="text-muted-foreground text-xs">
-                  {currentUser?.phoneNumber}
+                  {currentUser?.email}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <Link href="/my-trips">
