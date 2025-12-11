@@ -44,6 +44,7 @@ export interface IStorage {
   updateUserOtpByEmail(email: string, otp: string, expiresAt: Date): Promise<User | undefined>;
   incrementOtpAttemptsByEmail(email: string): Promise<void>;
   resetOtpAttemptsByEmail(email: string): Promise<void>;
+  updateUserGender(id: number, gender: string): Promise<User | undefined>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -198,6 +199,15 @@ export class PostgresStorage implements IStorage {
       .update(users)
       .set({ otpAttempts: 0 })
       .where(eq(users.email, email));
+  }
+
+  async updateUserGender(id: number, gender: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ gender })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
   }
 }
 

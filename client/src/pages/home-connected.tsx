@@ -23,8 +23,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/currency";
 import { sampleTrips, filterTrips } from "@/data/sampleTrips";
-import { PickupDropModal } from "@/components/PickupDropModal";
+import { PickupModal } from "@/components/PickupModal";
+import { DropModal } from "@/components/DropModal";
 import { toLocalISO } from "@/utils/dateLocal";
+import { useLocation } from "wouter";
 
 export default function HomeConnected() {
   const { isAuthenticated, currentUser, setShowOtpModal, setPendingBooking, pendingBooking } = useAuth();
@@ -42,10 +44,12 @@ export default function HomeConnected() {
   const [searchDate, setSearchDate] = useState("");
   
   // Pickup/Drop point selection state
-  const [showPickupDropModal, setShowPickupDropModal] = useState(false);
+  const [showPickupModal, setShowPickupModal] = useState(false);
+  const [showDropModal, setShowDropModal] = useState(false);
   const [pendingTripForBooking, setPendingTripForBooking] = useState<any>(null);
-  const [selectedPickupPoint, setSelectedPickupPoint] = useState<string | null>(null);
-  const [selectedDropPoint, setSelectedDropPoint] = useState<string | null>(null);
+  const [selectedPickupPoint, setSelectedPickupPoint] = useState<{ id: string; label: string } | null>(null);
+  const [selectedDropPoint, setSelectedDropPoint] = useState<{ id: string; label: string } | null>(null);
+  const [, setLocation] = useLocation();
   
   const queryClient = useQueryClient();
 
@@ -166,26 +170,31 @@ export default function HomeConnected() {
 
   const handleViewSeats = (trip: any) => {
     const sampleTrip = sampleTrips.find(s => s.id === trip.id);
-    if (sampleTrip && sampleTrip.pickupPoints?.length > 0) {
-      setPendingTripForBooking({ ...trip, pickupPoints: sampleTrip.pickupPoints, dropPoints: sampleTrip.dropPoints });
-      setShowPickupDropModal(true);
-    } else {
-      setSelectedTrip(trip);
-      setBookingStep("seats");
-      setSelectedSeats([]);
-    }
+    setPendingTripForBooking({ 
+      ...trip, 
+      pickupPoints: sampleTrip?.pickupPoints || [], 
+      dropPoints: sampleTrip?.dropPoints || [] 
+    });
+    setShowPickupModal(true);
   };
 
-  const handlePickupDropConfirm = (pickupId: string, dropId: string) => {
-    setSelectedPickupPoint(pickupId);
-    setSelectedDropPoint(dropId);
-    setShowPickupDropModal(false);
+  const handlePickupSelect = (point: { id: string; label: string }) => {
+    console.log('PICKUP SELECTED', point);
+    setSelectedPickupPoint(point);
+    setShowPickupModal(false);
+    setShowDropModal(true);
+  };
+
+  const handleDropSelect = (point: { id: string; label: string }) => {
+    console.log('DROP SELECTED', point);
+    setSelectedDropPoint(point);
+    setShowDropModal(false);
     
-    if (pendingTripForBooking) {
-      setSelectedTrip(pendingTripForBooking);
-      setBookingStep("seats");
-      setSelectedSeats([]);
+    if (pendingTripForBooking && selectedPickupPoint) {
+      setLocation(`/booking/${pendingTripForBooking.id}?pickup=${selectedPickupPoint.id}&drop=${point.id}`);
       setPendingTripForBooking(null);
+      setSelectedPickupPoint(null);
+      setSelectedDropPoint(null);
     }
   };
 
@@ -206,19 +215,14 @@ export default function HomeConnected() {
       return;
     }
     
-    // Get pickup/drop labels if available
-    const tripData = sampleTrips.find(t => t.id === selectedTrip.id);
-    const pickupLabel = tripData?.pickupPoints?.find(p => p.id === selectedPickupPoint)?.label;
-    const dropLabel = tripData?.dropPoints?.find(d => d.id === selectedDropPoint)?.label;
-    
     setBookingStep("processing");
     bookSeatsMutation.mutate({
       showId: selectedTrip.id,
       seatIds: selectedSeats.map(s => s.id),
-      pickupId: selectedPickupPoint || undefined,
-      dropId: selectedDropPoint || undefined,
-      pickupLabel,
-      dropLabel,
+      pickupId: selectedPickupPoint?.id,
+      dropId: selectedDropPoint?.id,
+      pickupLabel: selectedPickupPoint?.label,
+      dropLabel: selectedDropPoint?.label,
     });
   };
 
@@ -454,17 +458,25 @@ export default function HomeConnected() {
         </SheetContent>
       </Sheet>
 
-      <PickupDropModal
-        open={showPickupDropModal}
+      <PickupModal
+        open={showPickupModal}
         onClose={() => {
-          setShowPickupDropModal(false);
+          setShowPickupModal(false);
           setPendingTripForBooking(null);
         }}
-        onConfirm={handlePickupDropConfirm}
-        pickupPoints={pendingTripForBooking?.pickupPoints || []}
-        dropPoints={pendingTripForBooking?.dropPoints || []}
-        source={pendingTripForBooking?.source || ""}
-        destination={pendingTripForBooking?.destination || ""}
+        trip={pendingTripForBooking}
+        onSelect={handlePickupSelect}
+      />
+
+      <DropModal
+        open={showDropModal}
+        onClose={() => {
+          setShowDropModal(false);
+          setShowPickupModal(true);
+        }}
+        trip={pendingTripForBooking}
+        onSelect={handleDropSelect}
+        selectedPickup={selectedPickupPoint || undefined}
       />
     </div>
   );

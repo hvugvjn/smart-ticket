@@ -47,6 +47,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   phoneNumber: text("phone_number"),
   email: text("email").notNull().unique(),
+  gender: text("gender"),
   otp: text("otp"),
   otpExpiresAt: timestamp("otp_expires_at"),
   otpAttempts: integer("otp_attempts").notNull().default(0),

@@ -227,7 +227,8 @@ export async function registerRoutes(
       // Send confirmation email if user exists and booking has seats
       if (booking.userId && booking.seatIds && booking.seatIds.length > 0) {
         try {
-          const user = await storage.getUserById(booking.userId);
+          const userId = parseInt(booking.userId);
+          const user = await storage.getUserById(userId);
           const show = await storage.getShow(booking.showId);
           
           if (!user?.email) {
@@ -248,8 +249,8 @@ export async function registerRoutes(
                   operatorName: show.operatorName,
                   source: show.source,
                   destination: show.destination,
-                  departureTime: show.departureTime,
-                  arrivalTime: show.arrivalTime,
+                  departureTime: show.departureTime.toISOString(),
+                  arrivalTime: show.arrivalTime.toISOString(),
                   duration: show.duration,
                 },
                 seats: bookedSeats.map(s => s.seatNumber),
@@ -258,7 +259,7 @@ export async function registerRoutes(
                 amount: booking.totalAmount,
                 currency: 'INR',
               });
-              console.log("Booking confirmation email sent successfully to:", user.email);
+              console.log("Sent booking confirmation to", user.email);
             }
           }
         } catch (emailError: any) {
@@ -297,7 +298,10 @@ export async function registerRoutes(
           }
         }
       } else {
+        // Phone-based auth is deprecated, use email-based auth instead
+        // Create user with placeholder email for backward compatibility
         user = await storage.createUser({ 
+          email: `${phoneNumber}@phone.nextravel.local`,
           phoneNumber, 
           otp: null, 
           otpExpiresAt: null,
@@ -470,9 +474,31 @@ export async function registerRoutes(
         { expiresIn: "7d" }
       );
 
-      res.json({ token, user: { id: user.id, email: user.email } });
+      res.json({ token, user: { id: user.id, email: user.email, gender: user.gender } });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update user gender
+  app.patch("/api/users/:id/gender", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { gender } = req.body;
+      
+      if (!gender || !['male', 'female', 'other'].includes(gender)) {
+        return res.status(400).json({ error: "Invalid gender. Must be male, female, or other." });
+      }
+      
+      const user = await storage.updateUserGender(userId, gender);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      console.log("Updated gender for user", userId, "to", gender);
+      res.json({ id: user.id, email: user.email, gender: user.gender });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
