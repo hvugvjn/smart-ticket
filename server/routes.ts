@@ -222,6 +222,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Booking not found" });
       }
 
+      console.log('BOOKING CONFIRMED', booking.id);
       broadcastSeatUpdate(booking.showId);
 
       // Send confirmation email if user exists and booking has seats
@@ -263,7 +264,7 @@ export async function registerRoutes(
             }
           }
         } catch (emailError: any) {
-          console.error("Failed to send booking confirmation email:", emailError.message);
+          console.error('Booking email failed', emailError?.message || emailError);
         }
       } else {
         console.log("Skipping confirmation email: no userId or seatIds", { userId: booking.userId, seatIds: booking.seatIds });

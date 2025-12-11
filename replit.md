@@ -89,3 +89,34 @@ The booking engine uses:
 ### Environment Variables Required
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - Secret key for JWT signing (defaults to development value if not set)
+
+### Email Configuration
+NexTravel uses email for OTP authentication and booking confirmations. Configure one or both:
+
+**Gmail SMTP (Primary):**
+- `SMTP_USER` - Gmail address (e.g., yourapp@gmail.com)
+- `SMTP_PASS` - Gmail App Password (not regular password)
+- `SMTP_HOST` - Optional, defaults to smtp.gmail.com
+- `SMTP_PORT` - Optional, defaults to 465
+- `EMAIL_FROM` - Optional, defaults to "NexTravel <noreply@nextravel.com>"
+
+To create a Gmail App Password:
+1. Enable 2-Factor Authentication on your Google account
+2. Go to https://myaccount.google.com/apppasswords
+3. Generate a new app password for "Mail"
+
+**SendGrid Fallback (Optional):**
+- `SENDGRID_API_KEY` - SendGrid API key for fallback email delivery
+- `SENDGRID_FROM_EMAIL` - Verified sender email in SendGrid
+
+If Gmail fails, the system automatically falls back to SendGrid if configured.
+
+### Email Diagnostics
+Run SMTP diagnostics to test email configuration:
+```bash
+npx tsx server/diagnostics/smtp-test.ts
+```
+
+## Notes
+- SendGrid integration was dismissed by user; using manual API key configuration instead
+- Phone-based OTP is deprecated; email-based OTP is the primary authentication method

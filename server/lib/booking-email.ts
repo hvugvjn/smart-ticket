@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { sendBookingConfirmationEmailSG } from './sendgrid';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -167,13 +168,27 @@ Total Paid: ${formattedAmount}
 Thank you for booking with NexTravel!
   `;
 
-  const info = await transporter.sendMail({
-    from: process.env.EMAIL_FROM || 'NexTravel <noreply@nextravel.com>',
-    to: userEmail,
-    subject: `🎫 Booking Confirmed - ${tripDetails.source} to ${tripDetails.destination} | #${bookingId}`,
-    text,
-    html,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || 'NexTravel <noreply@nextravel.com>',
+      to: userEmail,
+      subject: `🎫 Booking Confirmed - ${tripDetails.source} to ${tripDetails.destination} | #${bookingId}`,
+      text,
+      html,
+    });
 
-  console.log(`📧 Booking confirmation email sent to ${userEmail}: ${info.messageId}`);
+    console.log('Sent booking confirmation to', userEmail);
+    console.log(`📧 Gmail Message ID: ${info.messageId}`);
+  } catch (gmailErr: any) {
+    console.error('GMAIL SEND ERROR', gmailErr?.message || gmailErr);
+    
+    if (process.env.SENDGRID_API_KEY) {
+      console.log('Falling back to SendGrid...');
+      await sendBookingConfirmationEmailSG(booking);
+      console.log('Sent booking confirmation via SendGrid to', userEmail);
+      return;
+    }
+    
+    throw gmailErr;
+  }
 }
