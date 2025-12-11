@@ -137,6 +137,8 @@ export async function registerRoutes(
 
   app.post("/api/shows/:id/book", async (req, res) => {
     try {
+      console.log("BOOKING REQUEST BODY", { ...req.body, passenger: req.body.passenger ? { ...req.body.passenger, idNumber: "****" } : undefined });
+      
       const showId = parseInt(req.params.id);
       const parsed = bookSeatsSchema.safeParse(req.body);
       
@@ -144,7 +146,15 @@ export async function registerRoutes(
         return res.status(400).json({ error: parsed.error.errors });
       }
 
-      const { seatIds, idempotencyKey, userId } = parsed.data;
+      const { seatIds, idempotencyKey, userId, passenger } = parsed.data;
+      
+      if (passenger) {
+        const phoneDigits = passenger.phone.replace(/\D/g, "");
+        if (phoneDigits.length < 10) {
+          return res.status(400).json({ error: "Invalid phone number - must be 10 digits" });
+        }
+        passenger.phone = phoneDigits.length === 10 ? `+91${phoneDigits}` : `+${phoneDigits}`;
+      }
 
       const existingBooking = await storage.getBookingByIdempotencyKey(idempotencyKey);
       if (existingBooking) {
@@ -194,6 +204,7 @@ export async function registerRoutes(
             status: "PENDING",
             totalAmount: totalAmount.toFixed(2),
             idempotencyKey,
+            passengerDetails: passenger || null,
             expiresAt,
           })
           .returning();
@@ -225,6 +236,9 @@ export async function registerRoutes(
 
       console.log('BOOKING CONFIRMED', booking.id);
       broadcastSeatUpdate(booking.showId);
+
+      // Use stored passenger details from booking - ignore request payload for security
+      const passengerDetails = booking.passengerDetails as any;
 
       // Send confirmation email if user exists and booking has seats
       if (booking.userId && booking.seatIds && booking.seatIds.length > 0) {
@@ -260,8 +274,9 @@ export async function registerRoutes(
                 dropPoint: dropLabel || undefined,
                 amount: booking.totalAmount,
                 currency: 'INR',
+                passenger: passengerDetails || undefined,
               });
-              console.log("Sent booking confirmation to", user.email);
+              console.log("Sent booking confirmation to", user.email, "for booking", booking.id);
             }
           }
         } catch (emailError: any) {

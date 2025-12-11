@@ -11,6 +11,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+interface PassengerDetails {
+  gender: string;
+  phone: string;
+  idType: string;
+  idNumber: string;
+}
+
 interface BookingDetails {
   bookingId: number;
   userEmail: string;
@@ -27,10 +34,24 @@ interface BookingDetails {
   dropPoint?: string;
   amount: string;
   currency: string;
+  passenger?: PassengerDetails;
+}
+
+function maskIdNumber(idNumber: string): string {
+  if (idNumber.length >= 6) {
+    return idNumber.slice(0, 2) + '****' + idNumber.slice(-2);
+  } else if (idNumber.length >= 4) {
+    return idNumber.slice(0, 1) + '**' + idNumber.slice(-1);
+  }
+  return '****';
+}
+
+function formatGender(gender: string): string {
+  return gender.charAt(0).toUpperCase() + gender.slice(1);
 }
 
 export async function sendBookingConfirmationEmail(booking: BookingDetails): Promise<void> {
-  const { bookingId, userEmail, tripDetails, seats, pickupPoint, dropPoint, amount, currency } = booking;
+  const { bookingId, userEmail, tripDetails, seats, pickupPoint, dropPoint, amount, currency, passenger } = booking;
   
   const departureDate = new Date(tripDetails.departureTime).toLocaleDateString('en-IN', {
     weekday: 'long',
@@ -53,6 +74,36 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails): Pro
     style: 'currency',
     currency: currency,
   }).format(parseFloat(amount));
+
+  const passengerHtml = passenger ? `
+    <div class="passenger-card" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #0369a1;">👤 Passenger Details</p>
+      <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="color: #6b7280;">Gender</span>
+        <span style="font-weight: 500; color: #1f2937;">${formatGender(passenger.gender)}</span>
+      </div>
+      <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="color: #6b7280;">Phone</span>
+        <span style="font-weight: 500; color: #1f2937;">${passenger.phone}</span>
+      </div>
+      <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="color: #6b7280;">ID Type</span>
+        <span style="font-weight: 500; color: #1f2937;">${passenger.idType}</span>
+      </div>
+      <div class="detail-row" style="display: flex; justify-content: space-between;">
+        <span style="color: #6b7280;">ID Number</span>
+        <span style="font-weight: 500; color: #1f2937;">${maskIdNumber(passenger.idNumber)}</span>
+      </div>
+    </div>
+  ` : '';
+
+  const passengerText = passenger ? `
+Passenger Details:
+Gender: ${formatGender(passenger.gender)}
+Phone: ${passenger.phone}
+ID Type: ${passenger.idType}
+ID Number: ${maskIdNumber(passenger.idNumber)}
+` : '';
 
   const html = `
     <!DOCTYPE html>
@@ -91,6 +142,8 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails): Pro
             <p style="margin: 0 0 5px 0; color: #6b7280;">Booking ID</p>
             <span>#${bookingId}</span>
           </div>
+          
+          ${passengerHtml}
           
           <div class="journey-card">
             <p style="margin: 0 0 10px 0; font-weight: bold; color: #7c3aed;">${tripDetails.operatorName}</p>
@@ -151,7 +204,7 @@ export async function sendBookingConfirmationEmail(booking: BookingDetails): Pro
 Booking Confirmed!
 
 Booking ID: #${bookingId}
-
+${passengerText}
 Journey Details:
 ${tripDetails.operatorName}
 ${tripDetails.source} → ${tripDetails.destination}
@@ -177,7 +230,7 @@ Thank you for booking with NexTravel!
       html,
     });
 
-    console.log('Sent booking confirmation to', userEmail);
+    console.log('Sent booking confirmation to', userEmail, 'for booking', bookingId);
     console.log(`📧 Gmail Message ID: ${info.messageId}`);
   } catch (gmailErr: any) {
     console.error('GMAIL SEND ERROR', gmailErr?.message || gmailErr);

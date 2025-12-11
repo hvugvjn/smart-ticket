@@ -88,11 +88,21 @@ export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
+export const passengerDetailsSchema = z.object({
+  gender: z.enum(["male", "female", "other"]),
+  phone: z.string().min(10),
+  idType: z.enum(["Aadhar Card", "Driving Licence", "Passport", "PAN Card", "Voter ID"]),
+  idNumber: z.string().min(4),
+});
+
 export const bookSeatsSchema = z.object({
   seatIds: z.array(z.number()).min(1).max(6),
   idempotencyKey: z.string(),
   userId: z.union([z.string(), z.number()]).optional(),
+  passenger: passengerDetailsSchema.optional(),
 });
+
+export type PassengerDetails = z.infer<typeof passengerDetailsSchema>;
 
 export const requestOtpSchema = z.object({
   phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/),

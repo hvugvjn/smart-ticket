@@ -90,7 +90,8 @@ export function PassengerDetailsModal({ open, onClose, onSubmit, defaultPhone = 
       idNumber: idNumber.toUpperCase().replace(/\s/g, ""),
     };
 
-    console.log("PASSENGER DETAILS SUBMIT", passenger);
+    const maskedPassenger = { ...passenger, idNumber: passenger.idNumber.length >= 6 ? passenger.idNumber.slice(0, 2) + '****' + passenger.idNumber.slice(-2) : '****' };
+    console.log("PASSENGER DETAILS SUBMIT", maskedPassenger);
 
     setIsSubmitting(true);
     try {

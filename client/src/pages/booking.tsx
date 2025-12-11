@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { SeatMapConnected } from "@/components/modules/SeatMapConnected";
 import { PickupModal } from "@/components/PickupModal";
 import { DropModal } from "@/components/DropModal";
+import { PassengerDetailsModal } from "@/components/PassengerDetailsModal";
 import { Button } from "@/components/ui/button";
 import { api, type Show, type Seat } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +15,13 @@ import { sampleTrips } from "@/data/sampleTrips";
 import { format, parseISO } from "date-fns";
 import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+
+interface PassengerDetails {
+  gender: string;
+  phone: string;
+  idType: string;
+  idNumber: string;
+}
 
 export default function BookingPage() {
   const [, params] = useRoute("/booking/:id");
@@ -39,8 +47,10 @@ export default function BookingPage() {
   
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showDropModal, setShowDropModal] = useState(false);
+  const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [selectedPickup, setSelectedPickup] = useState<{ id: string; label: string } | null>(null);
   const [selectedDrop, setSelectedDrop] = useState<{ id: string; label: string } | null>(null);
+  const [passengerDetails, setPassengerDetails] = useState<PassengerDetails | null>(null);
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ["show", numericTripId],
@@ -82,10 +92,27 @@ export default function BookingPage() {
   };
 
   const bookSeatsMutation = useMutation({
-    mutationFn: async ({ showId, seatIds }: { showId: number; seatIds: number[] }) => {
+    mutationFn: async ({ showId, seatIds, passenger }: { showId: number; seatIds: number[]; passenger: PassengerDetails }) => {
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36)}`;
       const userId = currentUser?.id;
-      const booking = await api.bookSeats(showId, seatIds, idempotencyKey, userId);
+      
+      const bookingPayload = {
+        showId,
+        seatIds,
+        idempotencyKey,
+        userId,
+        passenger,
+        pickupPointId: selectedPickup?.id,
+        dropPointId: selectedDrop?.id,
+        pickupLabel: selectedPickup?.label,
+        dropLabel: selectedDrop?.label,
+      };
+      const maskedPayload = { ...bookingPayload, passenger: bookingPayload.passenger ? { ...bookingPayload.passenger, idNumber: '****' } : undefined };
+      console.log("BOOKING PAYLOAD", maskedPayload);
+      
+      const booking = await api.bookSeats(showId, seatIds, idempotencyKey, userId, passenger);
+      console.log("BOOKING RESPONSE", { id: booking.id, status: booking.status });
+      
       if (isAuthenticated) {
         return await api.confirmBooking(booking.id, {
           pickupPointId: selectedPickup?.id,
@@ -147,10 +174,18 @@ export default function BookingPage() {
       return;
     }
     
+    setShowPassengerModal(true);
+  };
+
+  const handlePassengerSubmit = async (passenger: PassengerDetails) => {
+    setPassengerDetails(passenger);
+    setShowPassengerModal(false);
     setBookingStep("processing");
+    
     bookSeatsMutation.mutate({
       showId: numericTripId,
       seatIds: selectedSeats.map(s => s.id),
+      passenger,
     });
   };
 
@@ -333,6 +368,12 @@ export default function BookingPage() {
         trip={tripWithPoints}
         onSelect={handleDropSelect}
         selectedPickup={selectedPickup || undefined}
+      />
+
+      <PassengerDetailsModal
+        open={showPassengerModal}
+        onClose={() => setShowPassengerModal(false)}
+        onSubmit={handlePassengerSubmit}
       />
     </div>
   );
