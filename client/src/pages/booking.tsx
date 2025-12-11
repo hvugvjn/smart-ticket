@@ -8,7 +8,6 @@ import { DropModal } from "@/components/DropModal";
 import { PassengerDetailsModal } from "@/components/PassengerDetailsModal";
 import { FareBreakdownModal, calculateFareBreakdown, calculateFareFromBasePrice } from "@/components/FareBreakdownModal";
 import { MapMini } from "@/components/MapMini";
-import { LiveMapOverlay } from "@/components/LiveMapOverlay";
 import { TripCardSkeleton, MapSkeleton } from "@/components/SkeletonLoader";
 import { Button } from "@/components/ui/button";
 import { api, type Show, type Seat } from "@/lib/api";
@@ -17,7 +16,7 @@ import { formatINR } from "@/lib/currency";
 import { toast } from "@/hooks/use-toast";
 import { sampleTrips } from "@/data/sampleTrips";
 import { format, parseISO } from "date-fns";
-import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock, Receipt, Radio } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock, Receipt } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface PassengerDetails {
@@ -56,7 +55,6 @@ export default function BookingPage() {
   const [selectedDrop, setSelectedDrop] = useState<{ id: string; label: string } | null>(null);
   const [passengerDetails, setPassengerDetails] = useState<PassengerDetails | null>(null);
   const [showFareModal, setShowFareModal] = useState(false);
-  const [showLiveMap, setShowLiveMap] = useState(false);
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ["show", numericTripId],
@@ -284,7 +282,7 @@ export default function BookingPage() {
               </div>
             )}
 
-            <div className="pt-4 border-t border-white/10 space-y-3">
+            <div className="pt-4 border-t border-white/10">
               {isRouteLoading ? (
                 <MapSkeleton />
               ) : routeData ? (
@@ -298,17 +296,6 @@ export default function BookingPage() {
                   <p>Route map unavailable</p>
                 </div>
               )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full bg-white/5 border-white/10 hover:bg-primary/20 hover:border-primary/50"
-                onClick={() => setShowLiveMap(true)}
-                data-testid="button-track-live"
-              >
-                <Radio className="w-4 h-4 mr-2 text-green-500 animate-pulse" />
-                Track my bus live
-              </Button>
             </div>
           </div>
         )}
@@ -446,16 +433,6 @@ export default function BookingPage() {
           classType: (s.classType === "BUSINESS" ? "BUSINESS" : "ECONOMY") as "ECONOMY" | "BUSINESS"
         }))}
       />
-
-      {showLiveMap && routeData && (
-        <LiveMapOverlay
-          tripId={numericTripId}
-          pickup={routeData.pickup}
-          drop={routeData.drop}
-          stops={routeData.stops || []}
-          onClose={() => setShowLiveMap(false)}
-        />
-      )}
     </div>
   );
 }

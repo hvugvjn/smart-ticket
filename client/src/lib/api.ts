@@ -65,6 +65,9 @@ export interface EnrichedBooking extends Booking {
   show?: Show;
   seats?: Seat[];
   refund?: Refund;
+  busId?: number;
+  pickupPoint?: string;
+  dropPoint?: string;
 }
 
 export const api = {
@@ -168,6 +171,13 @@ export const api = {
   async getUserBookings(userId: string): Promise<EnrichedBooking[]> {
     const res = await fetch(`${API_BASE}/users/${userId}/bookings`);
     if (!res.ok) throw new Error("Failed to fetch bookings");
+    return res.json();
+  },
+
+  // Single booking by ID
+  async getBooking(bookingId: number): Promise<EnrichedBooking> {
+    const res = await fetch(`${API_BASE}/bookings/${bookingId}`);
+    if (!res.ok) throw new Error("Failed to fetch booking");
     return res.json();
   },
 

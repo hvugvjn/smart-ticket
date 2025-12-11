@@ -232,21 +232,30 @@ export function LocationSelect({ value, onChange, placeholder = "Select city", e
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 startVoiceSearch();
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  startVoiceSearch();
+                }
+              }}
               className={cn(
-                "p-1 rounded-full hover:bg-primary/20 transition-colors",
+                "p-1 rounded-full hover:bg-primary/20 transition-colors cursor-pointer",
                 isListening && "animate-pulse bg-primary/30"
               )}
               data-testid="voice-search-btn"
               aria-label="Voice search"
             >
               <Mic className={cn("h-4 w-4", isListening ? "text-primary" : "text-muted-foreground")} />
-            </button>
+            </span>
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
           </div>
         </Button>

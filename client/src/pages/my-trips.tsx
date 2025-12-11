@@ -1,90 +1,31 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { api, type EnrichedBooking } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/currency";
 import { format, parseISO } from "date-fns";
 import { 
   ArrowRight, 
-  Download, 
-  XCircle, 
   CheckCircle2, 
   Clock, 
   AlertTriangle,
+  XCircle,
   Calendar,
   Bus,
   Ticket
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 
 export default function MyTripsPage() {
   const { isAuthenticated, currentUser, setShowOtpModal } = useAuth();
-  const queryClient = useQueryClient();
-  const [cancellingBooking, setCancellingBooking] = useState<EnrichedBooking | null>(null);
-  const [refundPreview, setRefundPreview] = useState<{ amount: number; reason: string } | null>(null);
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["userBookings", currentUser?.id],
     queryFn: () => api.getUserBookings(String(currentUser?.id)),
     enabled: isAuthenticated && !!currentUser?.id,
   });
-
-  const cancelMutation = useMutation({
-    mutationFn: (bookingId: number) => api.cancelBooking(bookingId),
-    onSuccess: (result) => {
-      console.log('BOOKING_CANCEL', result.bookingId, { refundAmount: result.refundAmount, status: 'CANCELLED' });
-      toast({
-        title: "Booking Cancelled",
-        description: `Refund of ${formatINR(result.refundAmount)} has been processed.`,
-        className: "bg-green-500/10 border-green-500/20 text-green-500"
-      });
-      queryClient.invalidateQueries({ queryKey: ["userBookings"] });
-      setCancellingBooking(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Cancellation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleCancelClick = (booking: EnrichedBooking) => {
-    if (!booking.show) return;
-    
-    const departureTime = new Date(booking.show.departureTime).getTime();
-    const now = Date.now();
-    const hoursUntilDeparture = (departureTime - now) / (1000 * 60 * 60);
-    
-    const totalAmount = parseFloat(booking.totalAmount);
-    const cancellationFee = 50;
-    let refundAmount: number;
-    let reason: string;
-    
-    if (hoursUntilDeparture < 2) {
-      refundAmount = 0;
-      reason = "Non-refundable (less than 2 hours before departure)";
-    } else if (hoursUntilDeparture < 24) {
-      refundAmount = Math.max(0, (totalAmount * 0.5) - cancellationFee);
-      reason = "Partial refund (less than 24 hours before departure)";
-    } else {
-      refundAmount = Math.max(0, totalAmount - cancellationFee);
-      reason = "Full refund (more than 24 hours before departure)";
-    }
-    
-    setRefundPreview({ amount: refundAmount, reason });
-    setCancellingBooking(booking);
-  };
-
-  const handleDownloadTicket = (bookingId: number) => {
-    window.open(api.getTicketUrl(bookingId), '_blank');
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -156,12 +97,12 @@ export default function MyTripsPage() {
         ) : (
           <div className="space-y-4">
             {bookings.map((booking, index) => (
+              <Link href={`/my-trips/${booking.id}`} key={booking.id}>
               <motion.div
-                key={booking.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="glass-card rounded-2xl p-6"
+                className="glass-card rounded-2xl p-6 cursor-pointer hover:bg-white/5 transition-colors"
                 data-testid={`booking-card-${booking.id}`}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -227,79 +168,15 @@ export default function MyTripsPage() {
                   </div>
                 )}
 
-                <div className="flex gap-3 mt-4">
-                  {booking.status === "CONFIRMED" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleDownloadTicket(booking.id)}
-                        data-testid={`button-download-ticket-${booking.id}`}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Ticket
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 border-red-500/30 text-red-500 hover:bg-red-500/10"
-                        onClick={() => handleCancelClick(booking)}
-                        data-testid={`button-cancel-booking-${booking.id}`}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </>
-                  )}
+                <div className="flex items-center justify-end mt-4 text-sm text-primary">
+                  View Details <ArrowRight className="w-4 h-4 ml-1" />
                 </div>
               </motion.div>
+              </Link>
             ))}
           </div>
         )}
       </div>
-
-      <Dialog open={!!cancellingBooking} onOpenChange={(open) => !open && setCancellingBooking(null)}>
-        <DialogContent className="glass-card border-white/10 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Cancel Booking
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="py-4">
-            <p className="text-muted-foreground mb-4">
-              Are you sure you want to cancel booking <span className="font-mono font-bold">#{cancellingBooking?.id}</span>?
-            </p>
-
-            {refundPreview && (
-              <div className="p-4 bg-white/5 rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Refund Amount</span>
-                  <span className="text-xl font-bold text-green-500">{formatINR(refundPreview.amount)}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{refundPreview.reason}</p>
-              </div>
-            )}
-
-            <p className="text-sm text-muted-foreground mt-4">
-              A cancellation fee of ₹50 is applicable.
-            </p>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setCancellingBooking(null)}>
-              Keep Booking
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => cancellingBooking && cancelMutation.mutate(cancellingBooking.id)}
-              disabled={cancelMutation.isPending}
-            >
-              {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancellation"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -643,24 +643,60 @@ export async function registerRoutes(
 
   // ============ CANCELLATION & REFUND ENDPOINTS ============
   
+  // Get a single booking by ID (enriched with show, seats, refund)
+  app.get("/api/bookings/:id", async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const booking = await storage.getBookingById(bookingId);
+      
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Enrich with show, seats, and refund data
+      const show = await storage.getShow(booking.showId);
+      const seats = await storage.getSeatsByIds(booking.seatIds || []);
+      const refund = await storage.getRefundByBookingId(booking.id);
+      
+      // Derive busId from showId for live tracking
+      const busId = show?.id || 0;
+      
+      res.json({
+        ...booking,
+        show,
+        seats,
+        refund,
+        busId,
+        pickupPoint: show?.source || "Unknown",
+        dropPoint: show?.destination || "Unknown",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Get user's bookings
   app.get("/api/users/:userId/bookings", async (req, res) => {
     try {
       const userId = req.params.userId;
       const bookingsData = await storage.getBookingsByUserId(userId);
       
-      // Enrich with show and seat data
+      // Enrich with show and seat data (same enrichment as single booking endpoint)
       const enrichedBookings = await Promise.all(
         bookingsData.map(async (booking) => {
           const show = await storage.getShow(booking.showId);
           const seats = await storage.getSeatsByIds(booking.seatIds || []);
           const refund = await storage.getRefundByBookingId(booking.id);
+          const busId = show?.id || 0;
           
           return {
             ...booking,
             show,
             seats,
             refund,
+            busId,
+            pickupPoint: show?.source || "Unknown",
+            dropPoint: show?.destination || "Unknown",
           };
         })
       );
