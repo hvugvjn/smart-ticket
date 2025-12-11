@@ -6,12 +6,14 @@
  * - Changed default placeholders to Indian cities
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { LocationSelect } from "@/components/LocationSelect";
 import { DatePickerInput } from "@/components/DatePickerInput";
 
 export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
+  const { t } = useTranslation();
   const [date, setDate] = useState<Date>();
   const [from, setFrom] = useState("Mumbai");
   const [to, setTo] = useState("Bengaluru");
@@ -28,33 +30,33 @@ export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           {/* FROM */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground ml-1">FROM</label>
+            <label className="text-xs font-medium text-muted-foreground ml-1">{t("search.from").toUpperCase()}</label>
             <LocationSelect
               value={from}
               onChange={setFrom}
-              placeholder="Select departure city"
+              placeholder={t("search.selectCity")}
               excludeCity={to}
             />
           </div>
 
           {/* TO */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground ml-1">TO</label>
+            <label className="text-xs font-medium text-muted-foreground ml-1">{t("search.to").toUpperCase()}</label>
             <LocationSelect
               value={to}
               onChange={setTo}
-              placeholder="Select destination city"
+              placeholder={t("search.selectCity")}
               excludeCity={from}
             />
           </div>
 
           {/* DATE */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground ml-1">DATE</label>
+            <label className="text-xs font-medium text-muted-foreground ml-1">{t("search.date").toUpperCase()}</label>
             <DatePickerInput
               value={date}
               onChange={setDate}
-              placeholder="Pick a date"
+              placeholder={t("search.date")}
             />
           </div>
         </div>
@@ -66,7 +68,7 @@ export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
           onClick={handleSearch}
         >
           <Search className="mr-2 h-5 w-5" />
-          SEARCH
+          {t("search.search").toUpperCase()}
         </Button>
       </div>
     </div>

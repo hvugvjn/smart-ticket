@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { MapMini } from "@/components/MapMini";
@@ -29,6 +30,7 @@ import {
 import { motion } from "framer-motion";
 
 export default function TripDetailsPage() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/my-trips/:bookingId");
   const [, setLocation] = useLocation();
   const bookingId = parseInt(params?.bookingId || "0", 10);
@@ -58,8 +60,8 @@ export default function TripDetailsPage() {
     mutationFn: (bookingId: number) => api.cancelBooking(bookingId),
     onSuccess: (result) => {
       toast({
-        title: "Booking Cancelled",
-        description: `Refund of ${formatINR(result.refundAmount)} has been processed.`,
+        title: t("cancel.success"),
+        description: `${t("cancel.refundAmount")}: ${formatINR(result.refundAmount)}`,
         className: "bg-green-500/10 border-green-500/20 text-green-500"
       });
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
@@ -111,19 +113,19 @@ export default function TripDetailsPage() {
       case "CONFIRMED":
         return (
           <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-3 py-1 rounded-full text-sm">
-            <CheckCircle2 className="w-4 h-4" /> Confirmed
+            <CheckCircle2 className="w-4 h-4" /> {t("ticket.confirmed")}
           </span>
         );
       case "PENDING":
         return (
           <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full text-sm">
-            <Clock className="w-4 h-4" /> Pending
+            <Clock className="w-4 h-4" /> {t("ticket.pending")}
           </span>
         );
       case "CANCELLED":
         return (
           <span className="flex items-center gap-1 text-red-500 bg-red-500/10 px-3 py-1 rounded-full text-sm">
-            <XCircle className="w-4 h-4" /> Cancelled
+            <XCircle className="w-4 h-4" /> {t("ticket.cancelled")}
           </span>
         );
       default:
@@ -137,10 +139,10 @@ export default function TripDetailsPage() {
         <Navbar />
         <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
           <Bus className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-          <h1 className="text-2xl font-display font-bold mb-4">Login Required</h1>
-          <p className="text-muted-foreground mb-6">Please login to view your trip details.</p>
+          <h1 className="text-2xl font-display font-bold mb-4">{t("auth.loginRequired")}</h1>
+          <p className="text-muted-foreground mb-6">{t("auth.loginDesc")}</p>
           <Button onClick={() => setShowOtpModal(true)} className="bg-primary hover:bg-primary/90">
-            Login Now
+            {t("auth.loginNow")}
           </Button>
         </div>
       </div>
@@ -166,9 +168,9 @@ export default function TripDetailsPage() {
         <Navbar />
         <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
           <AlertTriangle className="w-16 h-16 mx-auto text-yellow-500/50 mb-4" />
-          <h1 className="text-2xl font-display font-bold mb-4">Booking Not Found</h1>
-          <p className="text-muted-foreground mb-6">The booking you're looking for doesn't exist.</p>
-          <Button onClick={() => setLocation("/my-trips")}>Back to My Trips</Button>
+          <h1 className="text-2xl font-display font-bold mb-4">{t("errors.bookingNotFound")}</h1>
+          <p className="text-muted-foreground mb-6">{t("errors.tryAgain")}</p>
+          <Button onClick={() => setLocation("/my-trips")}>{t("common.back")}</Button>
         </div>
       </div>
     );
@@ -272,7 +274,7 @@ export default function TripDetailsPage() {
               <div className="glass-card rounded-2xl p-6">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <Radio className="w-5 h-5 text-green-500 animate-pulse" />
-                  Live Tracking
+                  {t("myTrips.liveTracking")}
                 </h3>
                 
                 {isRouteLoading ? (
@@ -290,18 +292,18 @@ export default function TripDetailsPage() {
                       data-testid="button-track-live"
                     >
                       <Radio className="w-4 h-4 mr-2 text-green-500 animate-pulse" />
-                      Track My Bus Live
+                      {t("ticket.track")}
                     </Button>
                   </div>
                 ) : (
                   <div className="h-[220px] rounded-xl bg-white/5 flex items-center justify-center text-muted-foreground">
-                    <p>Route map unavailable</p>
+                    <p>{t("myTrips.routeMap")}</p>
                   </div>
                 )}
               </div>
 
               <div className="glass-card rounded-2xl p-6">
-                <h3 className="text-lg font-bold mb-4">Ticket Actions</h3>
+                <h3 className="text-lg font-bold mb-4">{t("myTrips.ticketActions")}</h3>
                 <div className="flex gap-4">
                   <Button
                     className="flex-1"
@@ -309,7 +311,7 @@ export default function TripDetailsPage() {
                     data-testid="button-download-ticket"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Download Ticket (PDF)
+                    {t("ticket.downloadPdf")}
                   </Button>
                   <Button
                     variant="outline"
@@ -318,7 +320,7 @@ export default function TripDetailsPage() {
                     data-testid="button-cancel-booking"
                   >
                     <XCircle className="w-4 h-4 mr-2" />
-                    Cancel Ticket
+                    {t("ticket.cancelTicket")}
                   </Button>
                 </div>
               </div>
@@ -332,19 +334,19 @@ export default function TripDetailsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Cancel Booking
+              {t("cancel.title")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="py-4">
             <p className="text-muted-foreground mb-4">
-              Are you sure you want to cancel this ticket?
+              {t("cancel.confirmation")}
             </p>
 
             {refundPreview && (
               <div className="p-4 bg-white/5 rounded-lg space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Refund Amount</span>
+                  <span className="text-muted-foreground">{t("cancel.refundAmount")}</span>
                   <span className="text-xl font-bold text-green-500">{formatINR(refundPreview.amount)}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{refundPreview.reason}</p>
@@ -352,20 +354,20 @@ export default function TripDetailsPage() {
             )}
 
             <p className="text-sm text-muted-foreground mt-4">
-              A cancellation fee of ₹50 is applicable.
+              {t("cancel.cancellationFee")}
             </p>
           </div>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowCancelModal(false)}>
-              Keep Booking
+              {t("cancel.keepBooking")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => cancelMutation.mutate(bookingId)}
               disabled={cancelMutation.isPending}
             >
-              {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancellation"}
+              {cancelMutation.isPending ? t("cancel.cancelling") : t("cancel.confirmCancel")}
             </Button>
           </DialogFooter>
         </DialogContent>

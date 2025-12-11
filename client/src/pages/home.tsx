@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navbar } from "@/components/layout/Navbar";
 import { SearchHero } from "@/components/modules/SearchHero";
 import { trips, Trip, Seat } from "@/lib/mockData";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
+  const { t } = useTranslation();
   const [searchResults, setSearchResults] = useState<Trip[] | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
@@ -70,10 +72,14 @@ export default function Home() {
             className="max-w-3xl"
           >
             <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight mb-6">
-              Experience the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 text-glow">Future</span> of Travel
+              {t("home.title").split("Future").map((part, i) => 
+                i === 0 ? (
+                  <span key={i}>{part}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 text-glow">Future</span></span>
+                ) : part
+              )}
             </h1>
             <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
-              Premium intercity bus booking with intelligent seat selection, real-time tracking, and superior comfort.
+              {t("home.subtitle")}
             </p>
           </motion.div>
         </div>

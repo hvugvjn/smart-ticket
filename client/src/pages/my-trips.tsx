@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { api, type EnrichedBooking } from "@/lib/api";
@@ -19,6 +20,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 
 export default function MyTripsPage() {
+  const { t } = useTranslation();
   const { isAuthenticated, currentUser, setShowOtpModal } = useAuth();
 
   const { data: bookings, isLoading } = useQuery({
@@ -32,25 +34,25 @@ export default function MyTripsPage() {
       case "CONFIRMED":
         return (
           <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-3 py-1 rounded-full text-sm">
-            <CheckCircle2 className="w-4 h-4" /> Confirmed
+            <CheckCircle2 className="w-4 h-4" /> {t("ticket.confirmed")}
           </span>
         );
       case "PENDING":
         return (
           <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full text-sm">
-            <Clock className="w-4 h-4" /> Pending
+            <Clock className="w-4 h-4" /> {t("ticket.pending")}
           </span>
         );
       case "CANCELLED":
         return (
           <span className="flex items-center gap-1 text-red-500 bg-red-500/10 px-3 py-1 rounded-full text-sm">
-            <XCircle className="w-4 h-4" /> Cancelled
+            <XCircle className="w-4 h-4" /> {t("ticket.cancelled")}
           </span>
         );
       case "EXPIRED":
         return (
           <span className="flex items-center gap-1 text-gray-500 bg-gray-500/10 px-3 py-1 rounded-full text-sm">
-            <AlertTriangle className="w-4 h-4" /> Expired
+            <AlertTriangle className="w-4 h-4" /> {t("ticket.expired")}
           </span>
         );
       default:
@@ -64,10 +66,10 @@ export default function MyTripsPage() {
         <Navbar />
         <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
           <Ticket className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-          <h1 className="text-2xl font-display font-bold mb-4">Login Required</h1>
-          <p className="text-muted-foreground mb-6">Please login to view your trips.</p>
+          <h1 className="text-2xl font-display font-bold mb-4">{t("auth.loginRequired")}</h1>
+          <p className="text-muted-foreground mb-6">{t("auth.loginDesc")}</p>
           <Button onClick={() => setShowOtpModal(true)} className="bg-primary hover:bg-primary/90">
-            Login Now
+            {t("auth.loginNow")}
           </Button>
         </div>
       </div>
@@ -79,7 +81,7 @@ export default function MyTripsPage() {
       <Navbar />
       
       <div className="main-content max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-display font-bold mb-8">My Trips</h1>
+        <h1 className="text-3xl font-display font-bold mb-8">{t("myTrips.title")}</h1>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -88,10 +90,10 @@ export default function MyTripsPage() {
         ) : !bookings || bookings.length === 0 ? (
           <div className="text-center py-12 glass-card rounded-2xl">
             <Bus className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-bold mb-2">No trips yet</h3>
-            <p className="text-muted-foreground mb-6">You haven't booked any trips yet.</p>
+            <h3 className="text-xl font-bold mb-2">{t("myTrips.noTrips")}</h3>
+            <p className="text-muted-foreground mb-6">{t("myTrips.noTripsDesc")}</p>
             <Link href="/">
-              <Button>Book Your First Trip</Button>
+              <Button>{t("myTrips.bookFirst")}</Button>
             </Link>
           </div>
         ) : (
@@ -169,7 +171,7 @@ export default function MyTripsPage() {
                 )}
 
                 <div className="flex items-center justify-end mt-4 text-sm text-primary">
-                  View Details <ArrowRight className="w-4 h-4 ml-1" />
+                  {t("ticket.viewDetails")} <ArrowRight className="w-4 h-4 ml-1" />
                 </div>
               </motion.div>
               </Link>
