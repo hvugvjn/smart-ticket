@@ -60,11 +60,11 @@ export const api = {
     return res.json();
   },
 
-  async bookSeats(showId: number, seatIds: number[], idempotencyKey: string): Promise<Booking> {
+  async bookSeats(showId: number, seatIds: number[], idempotencyKey: string, userId?: number): Promise<Booking> {
     const res = await fetch(`${API_BASE}/shows/${showId}/book`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seatIds, idempotencyKey }),
+      body: JSON.stringify({ seatIds, idempotencyKey, userId }),
     });
     if (!res.ok) {
       const error = await res.json();

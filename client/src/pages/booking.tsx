@@ -84,7 +84,8 @@ export default function BookingPage() {
   const bookSeatsMutation = useMutation({
     mutationFn: async ({ showId, seatIds }: { showId: number; seatIds: number[] }) => {
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36)}`;
-      const booking = await api.bookSeats(showId, seatIds, idempotencyKey);
+      const userId = currentUser?.id;
+      const booking = await api.bookSeats(showId, seatIds, idempotencyKey, userId);
       if (isAuthenticated) {
         return await api.confirmBooking(booking.id, {
           pickupPointId: selectedPickup?.id,
