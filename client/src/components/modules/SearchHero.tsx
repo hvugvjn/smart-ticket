@@ -22,8 +22,8 @@ export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto -mt-24 relative z-10 px-4">
-      <div className="glass-panel rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl shadow-primary/10">
+    <div className="w-full max-w-5xl mx-auto -mt-24 relative z-50 px-4 pointer-events-auto search-bar-container">
+      <div className="glass-panel rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl shadow-primary/10 pointer-events-auto" style={{ position: 'relative', zIndex: 50 }}>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           {/* FROM */}

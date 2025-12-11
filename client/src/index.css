@@ -118,6 +118,19 @@
   }
 }
 
+/* Ensure search bar inputs are always clickable */
+.search-bar-container,
+.search-bar-container * {
+  pointer-events: auto !important;
+}
+
+.search-bar-container button,
+.search-bar-container input {
+  position: relative;
+  z-index: 51;
+  pointer-events: auto !important;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

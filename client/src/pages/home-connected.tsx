@@ -120,15 +120,15 @@ export default function HomeConnected() {
       <Navbar />
 
       <div className="relative h-[600px] w-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent z-10 pointer-events-none" />
         <img 
           src={heroImage} 
           alt="Luxury Travel" 
           className="w-full h-full object-cover opacity-80 scale-105 animate-in fade-in zoom-in duration-[2s]"
         />
         
-        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-12 max-w-7xl mx-auto">
+        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-12 max-w-7xl mx-auto pointer-events-none">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
