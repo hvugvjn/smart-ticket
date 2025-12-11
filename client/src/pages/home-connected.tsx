@@ -19,7 +19,7 @@ import { format, parseISO } from "date-fns";
 import { Wifi, Coffee, Battery, ArrowRight, CheckCircle2, Star, Users } from "lucide-react";
 import heroImage from "@assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
 import { toast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/currency";
 import { sampleTrips, filterTrips } from "@/data/sampleTrips";
@@ -28,12 +28,37 @@ import { DropModal } from "@/components/DropModal";
 import { toLocalISO } from "@/utils/dateLocal";
 import { useLocation } from "wouter";
 
+const rotatingWords = ["Travel", "Enjoy", "Love"];
+
+const wordVariants: Variants = {
+  enter: {
+    y: 30,
+    opacity: 0,
+  },
+  center: {
+    y: 0,
+    opacity: 1,
+  },
+  exit: {
+    y: -30,
+    opacity: 0,
+  },
+};
+
 export default function HomeConnected() {
   const { isAuthenticated, currentUser, setShowOtpModal, setPendingBooking, pendingBooking } = useAuth();
   const [selectedTrip, setSelectedTrip] = useState<Show | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [bookingStep, setBookingStep] = useState<"seats" | "processing" | "success">("seats");
   const [currentBookingId, setCurrentBookingId] = useState<number | null>(null);
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Search state
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -247,7 +272,22 @@ export default function HomeConnected() {
             className="max-w-3xl"
           >
             <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight mb-6">
-              Experience the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 text-glow">Future</span> of Travel
+              Experience the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 text-glow">Future</span> of{" "}
+              <span className="inline-block relative h-[1.2em] overflow-hidden align-bottom">
+                <AnimatePresence mode="popLayout">
+                  <motion.span
+                    key={rotatingWords[wordIndex]}
+                    variants={wordVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                    className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400"
+                  >
+                    {rotatingWords[wordIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
               Premium intercity bus booking with intelligent seat selection, real-time tracking, and superior comfort.
