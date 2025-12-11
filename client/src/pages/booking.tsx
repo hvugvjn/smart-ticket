@@ -18,7 +18,11 @@ import { motion } from "framer-motion";
 export default function BookingPage() {
   const [, params] = useRoute("/booking/:id");
   const [location, setLocation] = useLocation();
-  const tripId = params?.id;
+  
+  // Parse tripId from route params, extracting only numeric part if query params got mixed in
+  const rawTripId = params?.id || "";
+  const tripId = rawTripId.split("?")[0]; // Handle case where query params are included in path
+  const numericTripId = parseInt(tripId, 10);
   
   const urlParams = new URLSearchParams(window.location.search);
   const pickupParam = urlParams.get("pickup");
@@ -39,12 +43,12 @@ export default function BookingPage() {
   const [selectedDrop, setSelectedDrop] = useState<{ id: string; label: string } | null>(null);
 
   const { data: trip, isLoading } = useQuery({
-    queryKey: ["show", tripId],
-    queryFn: () => api.getShow(Number(tripId)),
-    enabled: !!tripId,
+    queryKey: ["show", numericTripId],
+    queryFn: () => api.getShow(numericTripId),
+    enabled: !isNaN(numericTripId) && numericTripId > 0,
   });
 
-  const sampleTrip = sampleTrips.find(t => t.id === Number(tripId));
+  const sampleTrip = sampleTrips.find(t => t.id === numericTripId);
   const tripWithPoints = trip ? { 
     ...trip, 
     pickupPoints: sampleTrip?.pickupPoints || [],
@@ -114,7 +118,7 @@ export default function BookingPage() {
   });
 
   const handleBook = () => {
-    if (!trip || selectedSeats.length === 0) return;
+    if (!trip || selectedSeats.length === 0 || isNaN(numericTripId)) return;
     
     if (!isAuthenticated) {
       setShowOtpModal(true);
@@ -127,7 +131,7 @@ export default function BookingPage() {
     
     setBookingStep("processing");
     bookSeatsMutation.mutate({
-      showId: Number(tripId),
+      showId: numericTripId,
       seatIds: selectedSeats.map(s => s.id),
     });
   };
@@ -222,7 +226,7 @@ export default function BookingPage() {
             <div className="glass-card rounded-2xl p-6">
               <h2 className="text-lg font-display font-semibold mb-4">Select Your Seats</h2>
               <SeatMapConnected 
-                showId={Number(tripId)} 
+                showId={numericTripId} 
                 onSelectionChange={setSelectedSeats} 
               />
             </div>

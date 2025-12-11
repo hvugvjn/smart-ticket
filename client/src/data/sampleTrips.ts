@@ -29,7 +29,7 @@ export interface SampleTrip {
 
 export const sampleTrips: SampleTrip[] = [
   {
-    id: 101,
+    id: 1,
     operatorName: "NeuBus Premium",
     source: "Mumbai",
     destination: "Bengaluru",
@@ -53,7 +53,7 @@ export const sampleTrips: SampleTrip[] = [
     ],
   },
   {
-    id: 102,
+    id: 2,
     operatorName: "SkyLine Express",
     source: "Delhi",
     destination: "Jaipur",
@@ -76,7 +76,7 @@ export const sampleTrips: SampleTrip[] = [
     ],
   },
   {
-    id: 103,
+    id: 3,
     operatorName: "InterCity Gold",
     source: "Chennai",
     destination: "Hyderabad",
@@ -99,7 +99,7 @@ export const sampleTrips: SampleTrip[] = [
     ],
   },
   {
-    id: 104,
+    id: 4,
     operatorName: "Raj Travels",
     source: "Mumbai",
     destination: "Pune",
@@ -121,7 +121,7 @@ export const sampleTrips: SampleTrip[] = [
     ],
   },
   {
-    id: 105,
+    id: 5,
     operatorName: "Royal Cruiser",
     source: "Bengaluru",
     destination: "Chennai",
