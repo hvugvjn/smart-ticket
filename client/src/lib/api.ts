@@ -73,9 +73,11 @@ export const api = {
     return res.json();
   },
 
-  async confirmBooking(bookingId: number): Promise<Booking> {
+  async confirmBooking(bookingId: number, options?: { pickupPointId?: string; dropPointId?: string; pickupLabel?: string; dropLabel?: string }): Promise<Booking> {
     const res = await fetch(`${API_BASE}/bookings/${bookingId}/confirm`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options || {}),
     });
     if (!res.ok) throw new Error("Failed to confirm booking");
     return res.json();

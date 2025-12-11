@@ -1,0 +1,49 @@
+Fix three issues and implement the missing booking-confirmation flow.
+
+Goals
+1. Correct date handling so selected date (e.g. 2025-12-27) matches results (no timezone off-by-one).
+2. Implement pickup → drop flow after a user selects a bus (two-step flow before seat selection).
+3. Send booking confirmation email with full journey details when booking is confirmed.
+
+Make only behavior/logic changes; do not change styling except tiny UX text.
+
+TASK A — Fix date mismatch (root cause: timezone/ISO conversion)
+1. Problem: Selected date (UI) shows Dec 27 but search results show Dec 26. Fix by:
+   - Always format dates using LOCAL date components (YYYY-MM-DD) instead of using `date.toISOString()` which can shift day due to timezone.
+   - Create helper `client/src/utils/dateLocal.ts` with:
+     ```js
+     export function toLocalISO(date: Date) {
+       const y = date.getFullYear();
+       const m = String(date.getMonth()+1).padStart(2,'0');
+       const d = String(date.getDate()).padStart(2,'0');
+       return `${y}-${m}-${d}`;
+     }
+     export function parseLocalISO(iso) { // 'YYYY-MM-DD' -> Date
+       const [y,m,d] = iso.split('-').map(Number);
+       return new Date(y,m-1,d);
+     }
+     ```
+   - Update DatePickerInput to call `onChange(toLocalISO(selectedDate))` (instead of `toISOString().slice(0,10)`).
+   - Update all search/filter code to compare trip.date (YYYY-MM-DD) with selected date string directly (exact string equality).
+   - Update any backend show creation logic (if it stores dates as timestamps) to store a `date_iso` field `'YYYY-MM-DD'` for filtering.
+
+Files to change:
+- client/src/components/DatePickerInput.tsx (use the toLocalISO helper)
+- client/src/utils/dateLocal.ts (CREATE)
+- client/src/pages/home.tsx search handler (use ISO string compare)
+- server (if using backend) ensure shows table has `date_iso VARCHAR` and queries filter on that field.
+
+Acceptance:
+- Selecting Dec 27 yields search for `2025-12-27` and results (if matching) display that exact date.
+
+TASK B — Pickup → Drop flow
+1. User story: When the user clicks **View Seats** (or the bus card) we must prompt for pickup point inside FROM city, then proceed to drop point inside TO city, then continue to seat selection / booking confirmation.
+2. Implement a two-step modal flow:
+   - Step 1: `PickupModal` shows list of pickup points for the trip's `source` (use trip.pickup_points array if present; else fallback to default sample points).
+   - Step 2: after pickup selection, show `DropModal` with drop points for `destination`.
+   - On confirm drop → navigate to `/booking/:id?pickup=<id>&drop=<id>` or call `router.push` to that route with query params.
+3. Update booking page to read `pickup` & `drop` from query params and present seat map/selection after both are present. If missing, redirect user back to pickup selection flow.
+4. Provide fallback data: extend sampleTrips objects with `pickup_points` and `drop_points` arrays:
+   ```js
+   pickup_points: [{ id:'p1', label:'Central Bus Stand, Mumbai' }, ...],
+   drop_points: [{ id:'d1', label:'Majestic Bus Stop, Bengaluru' }, ...]

@@ -23,6 +23,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/currency";
 import { sampleTrips, filterTrips } from "@/data/sampleTrips";
+import { PickupDropModal } from "@/components/PickupDropModal";
+import { toLocalISO } from "@/utils/dateLocal";
 
 export default function HomeConnected() {
   const { isAuthenticated, currentUser, setShowOtpModal, setPendingBooking, pendingBooking } = useAuth();
@@ -39,6 +41,12 @@ export default function HomeConnected() {
   const [searchTo, setSearchTo] = useState("");
   const [searchDate, setSearchDate] = useState("");
   
+  // Pickup/Drop point selection state
+  const [showPickupDropModal, setShowPickupDropModal] = useState(false);
+  const [pendingTripForBooking, setPendingTripForBooking] = useState<any>(null);
+  const [selectedPickupPoint, setSelectedPickupPoint] = useState<string | null>(null);
+  const [selectedDropPoint, setSelectedDropPoint] = useState<string | null>(null);
+  
   const queryClient = useQueryClient();
 
   const { data: shows = [] } = useQuery({
@@ -47,7 +55,8 @@ export default function HomeConnected() {
   });
 
   const handleSearch = async ({ from, to, date }: { from: string; to: string; date?: Date }) => {
-    console.log("SEARCH START", { from, to, date: date?.toISOString().split("T")[0] });
+    const localDateStr = date ? toLocalISO(date) : "";
+    console.log("SEARCH START", { from, to, date: localDateStr });
     
     if (!from || !to) {
       toast({
@@ -60,13 +69,13 @@ export default function HomeConnected() {
 
     setSearchFrom(from);
     setSearchTo(to);
-    setSearchDate(date ? date.toISOString().split("T")[0] : "");
+    setSearchDate(localDateStr);
     setIsSearching(true);
     setIsSearched(true);
 
     try {
       // Try API first
-      const dateParam = date ? date.toISOString().split("T")[0] : "";
+      const dateParam = localDateStr;
       const url = `/api/shows?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${dateParam ? `&date=${dateParam}` : ""}`;
       
       const controller = new AbortController();
@@ -90,7 +99,7 @@ export default function HomeConnected() {
     } catch (error) {
       // Fallback to local sample data
       console.log("FALLBACK: local sampleTrips used");
-      const dateStr = date ? date.toISOString().split("T")[0] : undefined;
+      const dateStr = date ? toLocalISO(date) : undefined;
       const filtered = filterTrips(sampleTrips, from, to, dateStr);
       console.log("SEARCH RESULTS", filtered.length);
       setSearchResults(filtered);
@@ -115,11 +124,11 @@ export default function HomeConnected() {
   }, [isAuthenticated, pendingBooking, shows]);
 
   const bookSeatsMutation = useMutation({
-    mutationFn: async ({ showId, seatIds }: { showId: number; seatIds: number[] }) => {
+    mutationFn: async ({ showId, seatIds, pickupId, dropId, pickupLabel, dropLabel }: { showId: number; seatIds: number[]; pickupId?: string; dropId?: string; pickupLabel?: string; dropLabel?: string }) => {
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36)}`;
       const booking = await api.bookSeats(showId, seatIds, idempotencyKey);
       if (isAuthenticated) {
-        return await api.confirmBooking(booking.id);
+        return await api.confirmBooking(booking.id, { pickupPointId: pickupId, dropPointId: dropId, pickupLabel, dropLabel });
       }
       return booking;
     },
@@ -155,6 +164,31 @@ export default function HomeConnected() {
     },
   });
 
+  const handleViewSeats = (trip: any) => {
+    const sampleTrip = sampleTrips.find(s => s.id === trip.id);
+    if (sampleTrip && sampleTrip.pickupPoints?.length > 0) {
+      setPendingTripForBooking({ ...trip, pickupPoints: sampleTrip.pickupPoints, dropPoints: sampleTrip.dropPoints });
+      setShowPickupDropModal(true);
+    } else {
+      setSelectedTrip(trip);
+      setBookingStep("seats");
+      setSelectedSeats([]);
+    }
+  };
+
+  const handlePickupDropConfirm = (pickupId: string, dropId: string) => {
+    setSelectedPickupPoint(pickupId);
+    setSelectedDropPoint(dropId);
+    setShowPickupDropModal(false);
+    
+    if (pendingTripForBooking) {
+      setSelectedTrip(pendingTripForBooking);
+      setBookingStep("seats");
+      setSelectedSeats([]);
+      setPendingTripForBooking(null);
+    }
+  };
+
   const handleBook = () => {
     if (!selectedTrip || selectedSeats.length === 0) return;
     
@@ -172,10 +206,19 @@ export default function HomeConnected() {
       return;
     }
     
+    // Get pickup/drop labels if available
+    const tripData = sampleTrips.find(t => t.id === selectedTrip.id);
+    const pickupLabel = tripData?.pickupPoints?.find(p => p.id === selectedPickupPoint)?.label;
+    const dropLabel = tripData?.dropPoints?.find(d => d.id === selectedDropPoint)?.label;
+    
     setBookingStep("processing");
     bookSeatsMutation.mutate({
       showId: selectedTrip.id,
       seatIds: selectedSeats.map(s => s.id),
+      pickupId: selectedPickupPoint || undefined,
+      dropId: selectedDropPoint || undefined,
+      pickupLabel,
+      dropLabel,
     });
   };
 
@@ -284,11 +327,7 @@ export default function HomeConnected() {
                     <Button 
                       data-testid={`view-seats-${trip.id}`}
                       className="w-full bg-white/10 hover:bg-primary hover:text-primary-foreground text-foreground border border-white/10 transition-all duration-300"
-                      onClick={() => {
-                        setSelectedTrip(trip);
-                        setBookingStep("seats");
-                        setSelectedSeats([]);
-                      }}
+                      onClick={() => handleViewSeats(trip)}
                     >
                       View Seats
                     </Button>
@@ -414,6 +453,19 @@ export default function HomeConnected() {
           )}
         </SheetContent>
       </Sheet>
+
+      <PickupDropModal
+        open={showPickupDropModal}
+        onClose={() => {
+          setShowPickupDropModal(false);
+          setPendingTripForBooking(null);
+        }}
+        onConfirm={handlePickupDropConfirm}
+        pickupPoints={pendingTripForBooking?.pickupPoints || []}
+        dropPoints={pendingTripForBooking?.dropPoints || []}
+        source={pendingTripForBooking?.source || ""}
+        destination={pendingTripForBooking?.destination || ""}
+      />
     </div>
   );
 }

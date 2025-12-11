@@ -3,6 +3,7 @@ import { type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sendOtpEmail } from "./lib/mail";
+import { sendBookingConfirmationEmail } from "./lib/booking-email";
 import { 
   bookSeatsSchema, 
   requestOtpSchema, 
@@ -213,6 +214,8 @@ export async function registerRoutes(
   app.post("/api/bookings/:id/confirm", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const { pickupPointId, dropPointId, pickupLabel, dropLabel } = req.body;
+      
       const booking = await storage.confirmBooking(id);
       
       if (!booking) {
@@ -220,6 +223,50 @@ export async function registerRoutes(
       }
 
       broadcastSeatUpdate(booking.showId);
+
+      // Send confirmation email if user exists and booking has seats
+      if (booking.userId && booking.seatIds && booking.seatIds.length > 0) {
+        try {
+          const user = await storage.getUserById(booking.userId);
+          const show = await storage.getShow(booking.showId);
+          
+          if (!user?.email) {
+            console.log("Skipping confirmation email: no user email found for userId:", booking.userId);
+          } else if (!show) {
+            console.log("Skipping confirmation email: show not found for showId:", booking.showId);
+          } else {
+            const seats = await storage.getSeats(booking.showId);
+            const bookedSeats = seats.filter(s => booking.seatIds?.includes(s.id));
+            
+            if (bookedSeats.length === 0) {
+              console.log("Skipping confirmation email: no booked seats found");
+            } else {
+              await sendBookingConfirmationEmail({
+                bookingId: booking.id,
+                userEmail: user.email,
+                tripDetails: {
+                  operatorName: show.operatorName,
+                  source: show.source,
+                  destination: show.destination,
+                  departureTime: show.departureTime,
+                  arrivalTime: show.arrivalTime,
+                  duration: show.duration,
+                },
+                seats: bookedSeats.map(s => s.seatNumber),
+                pickupPoint: pickupLabel || undefined,
+                dropPoint: dropLabel || undefined,
+                amount: booking.totalAmount,
+                currency: 'INR',
+              });
+              console.log("Booking confirmation email sent successfully to:", user.email);
+            }
+          }
+        } catch (emailError: any) {
+          console.error("Failed to send booking confirmation email:", emailError.message);
+        }
+      } else {
+        console.log("Skipping confirmation email: no userId or seatIds", { userId: booking.userId, seatIds: booking.seatIds });
+      }
 
       res.json(booking);
     } catch (error: any) {

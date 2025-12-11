@@ -1,6 +1,7 @@
 /**
  * DatePickerInput.tsx
  * Calendar date picker with 6-month future limit
+ * Uses local date formatting to avoid timezone issues
  */
 import { useState } from "react";
 import { format, addMonths, startOfToday } from "date-fns";
@@ -13,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { toLocalISO } from "@/utils/dateLocal";
 
 interface DatePickerInputProps {
   value: Date | undefined;
@@ -26,7 +28,9 @@ export function DatePickerInput({ value, onChange, placeholder = "Pick a date" }
   const maxDate = addMonths(today, 6);
 
   const handleChange = (date: Date | undefined) => {
-    console.log("DatePickerInput onChange:", date);
+    if (date) {
+      console.log("DatePickerInput onChange (local):", toLocalISO(date));
+    }
     onChange(date);
   };
 
