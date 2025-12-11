@@ -108,10 +108,27 @@ export default function BookingPage() {
         className: "bg-green-500/10 border-green-500/20 text-green-500"
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error('BOOKING ERROR', error);
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        if (error.error) {
+          if (Array.isArray(error.error)) {
+            errorMessage = error.error.map((e: any) => e.message || e).join(', ');
+          } else {
+            errorMessage = error.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Booking Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
       setBookingStep("seats");

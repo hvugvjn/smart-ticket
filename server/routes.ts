@@ -188,7 +188,7 @@ export async function registerRoutes(
           .insert(bookings)
           .values({
             showId,
-            userId: userId || null,
+            userId: userId ? String(userId) : null,
             seatIds,
             status: "PENDING",
             totalAmount: totalAmount.toFixed(2),

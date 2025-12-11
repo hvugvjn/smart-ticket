@@ -89,7 +89,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export const bookSeatsSchema = z.object({
   seatIds: z.array(z.number()).min(1).max(6),
   idempotencyKey: z.string(),
-  userId: z.string().optional(),
+  userId: z.union([z.string(), z.number()]).optional(),
 });
 
 export const requestOtpSchema = z.object({
