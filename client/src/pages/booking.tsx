@@ -407,6 +407,10 @@ export default function BookingPage() {
         open={showFareModal}
         onClose={() => setShowFareModal(false)}
         seatPrices={selectedSeats.map(s => parseFloat(s.price))}
+        seatInfos={selectedSeats.map(s => ({
+          price: parseFloat(s.price),
+          classType: (s.classType === "BUSINESS" ? "BUSINESS" : "ECONOMY") as "ECONOMY" | "BUSINESS"
+        }))}
       />
     </div>
   );

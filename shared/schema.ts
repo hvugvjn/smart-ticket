@@ -26,6 +26,7 @@ export const seats = pgTable("seats", {
   row: integer("row").notNull(),
   col: integer("col").notNull(),
   type: text("type").notNull(),
+  classType: text("class_type").notNull().default("ECONOMY"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   features: text("features").array().notNull().default([]),
 });

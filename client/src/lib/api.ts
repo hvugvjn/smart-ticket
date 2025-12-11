@@ -23,6 +23,7 @@ export interface Seat {
   row: number;
   col: number;
   type: string;
+  classType: "ECONOMY" | "BUSINESS";
   price: string;
   features: string[];
   status?: "available" | "booked" | "pending";
