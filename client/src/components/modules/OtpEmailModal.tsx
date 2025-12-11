@@ -46,7 +46,7 @@ export function OtpEmailModal() {
       setCooldown(60);
       toast({
         title: "OTP Sent",
-        description: "Check the server logs for your 4-digit code",
+        description: "Check your email inbox (and spam folder) for your 4-digit code",
       });
     },
     onError: (error: Error) => {
@@ -174,7 +174,7 @@ export function OtpEmailModal() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Check server logs for your OTP code
+                  Check your email inbox and spam folder
                 </p>
               </div>
               <div className="flex gap-2">

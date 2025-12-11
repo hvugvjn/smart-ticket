@@ -1,0 +1,35 @@
+Make the following frontend-only updates. Keep the visual design identical; change behavior, labels and data only. After changes, return the changed file list and 3 screenshots (OTP sent toast, datepicker open, seat map showing INR prices).
+
+A. Remove server-log OTP hint and show email-only OTP UX
+1. Remove or hide any UI text that says "Check server logs for your OTP" or similar.
+2. Show a toast/inline message after request-otp-email: "OTP sent — check your email (and spam folder)". Keep resend cooldown text (e.g., "Resend available in 59s").
+3. Ensure the OTP modal copy reads: "Enter the 4-digit code sent to <email>" (no server log message).
+4. Keep OTP generation & backend unchanged; only replace client-side messages.
+
+B. FROM / TO inputs — editable, India-only searchable selector
+1. Replace the current non-editable FROM and TO fields with a searchable dropdown component `client/src/components/LocationSelect.tsx`.
+2. Behavior:
+   • Accept `value, onChange, placeholder`.
+   • Filter list as user types (case-insensitive).
+   • Allow keyboard navigation and Enter selection.
+3. Use the following static city list (India-only):
+   ["Mumbai","Delhi","Bengaluru","Chennai","Kolkata","Hyderabad","Pune","Ahmedabad","Jaipur","Lucknow","Kochi","Goa","Varanasi","Nagpur","Surat","Indore","Bhubaneswar","Mysore","Amritsar","Visakhapatnam"]
+4. Wire the new component into:
+   • `client/src/pages/home.tsx` (hero search FROM/TO)
+   • `client/src/pages/booking/[id].tsx` or `client/src/pages/booking.tsx` (if any prefilled route)
+   • Admin create/edit trip modal so admin selects cities from same list.
+5. Persist selected FROM/TO values into the search form state; on search, results should respect selected cities.
+
+C. Datepicker — proper calendar control
+1. Add `client/src/components/DatePickerInput.tsx` using `react-datepicker` or `react-day-picker`.
+2. Requirements:
+   • Calendar icon and placeholder "Pick a date".
+   • Allow selection from **today** up to **6 months** from now.
+   • Keyboard accessible.
+   • Output ISO date string to parent (`YYYY-MM-DD`).
+3. Wire into `home.tsx` search form and booking page so selected date is passed to API/search logic.
+
+D. Currency — convert all USD ($) to INR (₹)
+1. Replace all hard-coded USD signs and price strings with locale-aware INR formatting:
+   ```js
+   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price)
