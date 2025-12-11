@@ -3,12 +3,15 @@
  * Modifications:
  * - Updated for email-based OTP authentication (instead of phone)
  * - Manages pending booking state for resuming after login
+ * - Added role-based access control for admin features
  */
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 interface User {
   id: number;
   email: string;
+  role?: string;
+  gender?: string;
 }
 
 interface PendingBooking {
@@ -28,6 +31,7 @@ interface AuthContextType {
   setShowOtpModal: (show: boolean) => void;
   email: string;
   setEmail: (email: string) => void;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState("user@example.com");
 
   const isAuthenticated = !!token && !!currentUser;
+  const isAdmin = currentUser?.role === 'admin';
 
   const login = (newToken: string, user: User) => {
     setToken(newToken);
@@ -86,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setShowOtpModal,
         email,
         setEmail,
+        isAdmin,
       }}
     >
       {children}

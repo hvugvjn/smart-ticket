@@ -470,12 +470,12 @@ export async function registerRoutes(
       await storage.resetOtpAttemptsByEmail(email);
 
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, role: user.role || 'user' },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
 
-      res.json({ token, user: { id: user.id, email: user.email, gender: user.gender } });
+      res.json({ token, user: { id: user.id, email: user.email, gender: user.gender, role: user.role || 'user' } });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

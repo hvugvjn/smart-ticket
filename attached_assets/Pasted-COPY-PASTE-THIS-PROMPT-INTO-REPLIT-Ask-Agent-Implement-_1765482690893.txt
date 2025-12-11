@@ -1,0 +1,173 @@
+COPY–PASTE THIS PROMPT INTO REPLIT → Ask Agent
+Implement proper Admin-only access control in the project.
+
+Goals:
+1. Normal users should NOT see the “Admin” tab anywhere.
+2. Normal users should NEVER be able to open /admin (redirect them to home).
+3. Only users with role = "admin" should see the Admin button and should be able to access /admin.
+4. Create a hardcoded Admin login using email + OTP or password (your choice).
+5. When an admin logs in, their role must be returned from backend so UI can change.
+
+Tasks:
+
+========================================
+BACKEND CHANGES
+========================================
+
+1. Modify the users table:
+Add a column `role` with default "user".
+For admin accounts, the role will be "admin".
+
+If using Prisma:
+- Schema change:
+
+
+model User {
+id String @id
+email String @unique
+role String @default("user")
+...
+}
+
+Run migration.
+If using SQL directly:
+
+
+ALTER TABLE users ADD COLUMN role VARCHAR(10) DEFAULT 'user';
+
+
+2. Hardcode one admin user (insert into DB):
+Email: admin@nextravel.com
+Role: admin
+Password (if using password login): Admin@123
+OR allow admin OTP login using Gmail.
+
+3. Modify login API so response includes:
+
+
+{
+userId: "...",
+email: "...",
+role: "admin" | "user",
+token: "...jwt..."
+}
+
+
+4. Modify JWT generation so it also includes:
+
+
+role: user.role
+
+
+5. Add admin-only protection middleware:
+Create file: server/middleware/requireAdmin.js
+
+
+
+module.exports = function requireAdmin(req, res, next) {
+if (!req.user || req.user.role !== "admin") {
+return res.status(403).json({ error: "Forbidden: Admins only" });
+}
+next();
+};
+
+
+6. Apply the middleware to admin routes only:
+Example:
+
+
+const requireAdmin = require("../middleware/requireAdmin");
+
+router.get("/admin/stats", requireAdmin, adminController.getStats);
+router.post("/admin/trips", requireAdmin, adminController.createTrip);
+router.delete("/admin/trips/:id", requireAdmin, adminController.deleteTrip);
+
+
+========================================
+FRONTEND CHANGES
+========================================
+
+1. Modify login handler to store role:
+File: client/src/context/AuthContext.tsx (or wherever you store user)
+
+On login success:
+
+
+setUser({
+email: data.email,
+id: data.userId,
+role: data.role
+});
+
+
+2. Hide Admin menu for normal users:
+File: client/src/components/Navbar.tsx
+
+Replace Admin link code with:
+
+
+
+{user?.role === "admin" && (
+
+<Link href="/admin" className="nav-item">Admin</Link> )} ```
+
+Add route guard inside admin page:
+File: client/src/pages/admin/index.tsx
+
+Add at the top inside useEffect:
+
+useEffect(() => {
+  if (!user || user.role !== "admin") {
+    router.replace("/");
+  }
+}, [user]);
+
+
+Optional: create a separate button for admin login
+If user tries to access /admin but is not logged in → show:
+"Admin access only. Please log in as admin."
+
+========================================
+ACCEPTANCE CRITERIA
+
+Normal user logs in → No Admin menu visible.
+
+Normal user tries /admin → Immediately redirected to "/".
+
+Admin logs in → Admin menu appears + can open all admin dashboard pages.
+
+Backend blocks unauthorized access even if URL is manually typed.
+
+JWT includes role, UI reacts automatically.
+
+========================================
+When finished:
+Return the modified files list and any new files created.
+Do NOT remove existing user login flow.
+Only extend it with role-based access.
+
+
+---
+
+# After you paste this and Replit updates the project  
+Your system will work like this:
+
+### Normal User  
+- Can book buses  
+- Can view trips  
+- Cannot see Admin  
+- Cannot open /admin  
+
+### Admin User  
+- Logs in with admin email  
+- Sees Admin tab  
+- Can access admin dashboard, add trips, manage buses  
+
+---
+
+If you want, I can also generate:  
+✔ A separate **Admin Login Page**  
+✔ A **Complete JWT-based Role Guard**  
+✔ UI design for Admin Login  
+
+Just tell me.

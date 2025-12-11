@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { Users, DollarSign, Bus, TrendingUp, AlertCircle, Activity } from "lucide-react";
+import { Users, DollarSign, Bus, TrendingUp, AlertCircle, Activity, ShieldX } from "lucide-react";
 
 const data = [
   { name: 'Mon', revenue: 4000, bookings: 240 },
@@ -26,6 +28,62 @@ const occupancyData = [
 const COLORS = ['#06b6d4', '#1e293b', '#f59e0b', '#ef4444'];
 
 export default function Admin() {
+  const { isAdmin, isAuthenticated, setShowOtpModal } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isAdmin && isAuthenticated) {
+      setLocation("/");
+    }
+  }, [isAdmin, isAuthenticated, setLocation]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground font-sans">
+        <Navbar />
+        <div className="max-w-md mx-auto px-6 py-32 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <ShieldX className="w-10 h-10 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-display font-bold">Admin Access Only</h1>
+          <p className="text-muted-foreground">
+            This page is restricted to administrators. Please log in with an admin account to continue.
+          </p>
+          <Button 
+            onClick={() => setShowOtpModal(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Login as Admin
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background text-foreground font-sans">
+        <Navbar />
+        <div className="max-w-md mx-auto px-6 py-32 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <ShieldX className="w-10 h-10 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-display font-bold">Access Denied</h1>
+          <p className="text-muted-foreground">
+            You do not have permission to access the admin dashboard. Please contact an administrator if you believe this is an error.
+          </p>
+          <Button 
+            onClick={() => setLocation("/")}
+            variant="outline"
+            className="bg-white/5 border-white/10"
+          >
+            Return to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
       <Navbar />

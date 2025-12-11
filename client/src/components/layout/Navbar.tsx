@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
-  const { isAuthenticated, currentUser, setShowOtpModal, logout } = useAuth();
+  const { isAuthenticated, currentUser, setShowOtpModal, logout, isAdmin } = useAuth();
   const [showSupport, setShowSupport] = useState(false);
 
   return (
@@ -43,11 +43,13 @@ export function Navbar() {
               Book Tickets
             </span>
           </Link>
-          <Link href="/admin">
-            <span className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-              Admin
-            </span>
-          </Link>
+          {isAdmin && (
+            <Link href="/admin">
+              <span className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                Admin
+              </span>
+            </Link>
+          )}
           <Link href="/my-trips">
             <span className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
               My Trips
