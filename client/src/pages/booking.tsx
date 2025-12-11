@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { SeatMapConnected } from "@/components/modules/SeatMapConnected";
@@ -27,6 +28,7 @@ interface PassengerDetails {
 }
 
 export default function BookingPage() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/booking/:id");
   const [location, setLocation] = useLocation();
   
@@ -140,8 +142,8 @@ export default function BookingPage() {
       queryClient.invalidateQueries({ queryKey: ["seats"] });
       
       toast({
-        title: "Booking Confirmed!",
-        description: `Confirmation sent to ${currentUser?.email || 'your email'}`,
+        title: t("booking.confirmTitle"),
+        description: `${t("booking.confirmDesc")} ${currentUser?.email || t("common.yourEmail")}`,
         className: "bg-green-500/10 border-green-500/20 text-green-500"
       });
     },
@@ -164,7 +166,7 @@ export default function BookingPage() {
       }
       
       toast({
-        title: "Booking Failed",
+        title: t("booking.bookingFailed"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -178,8 +180,8 @@ export default function BookingPage() {
     if (!isAuthenticated) {
       setShowOtpModal(true);
       toast({
-        title: "Login Required",
-        description: "Please login to complete your booking.",
+        title: t("auth.loginRequired"),
+        description: t("auth.loginDesc"),
       });
       return;
     }
@@ -204,9 +206,9 @@ export default function BookingPage() {
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
-          <h1 className="text-2xl font-display font-bold mb-4">Trip Not Found</h1>
-          <p className="text-muted-foreground mb-6">The trip you're looking for doesn't exist.</p>
-          <Button onClick={() => setLocation("/")}>Back to Home</Button>
+          <h1 className="text-2xl font-display font-bold mb-4">{t("errors.tripNotFound")}</h1>
+          <p className="text-muted-foreground mb-6">{t("errors.tryAgain")}</p>
+          <Button onClick={() => setLocation("/")}>{t("common.back")}</Button>
         </div>
       </div>
     );
@@ -238,7 +240,7 @@ export default function BookingPage() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-primary">{formatINR(trip.price)}</p>
-                <p className="text-xs text-muted-foreground">per seat</p>
+                <p className="text-xs text-muted-foreground">{t("booking.perSeat")}</p>
               </div>
             </div>
             
@@ -265,7 +267,7 @@ export default function BookingPage() {
                   <div className="flex items-start gap-2">
                     <MapPin className="w-4 h-4 text-primary mt-0.5" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Pickup</p>
+                      <p className="text-xs text-muted-foreground">{t("booking.pickup")}</p>
                       <p className="text-sm font-medium">{selectedPickup.label}</p>
                     </div>
                   </div>
@@ -274,7 +276,7 @@ export default function BookingPage() {
                   <div className="flex items-start gap-2">
                     <Navigation className="w-4 h-4 text-primary mt-0.5" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Drop</p>
+                      <p className="text-xs text-muted-foreground">{t("booking.drop")}</p>
                       <p className="text-sm font-medium">{selectedDrop.label}</p>
                     </div>
                   </div>
@@ -293,7 +295,7 @@ export default function BookingPage() {
                 />
               ) : (
                 <div className="h-[220px] rounded-xl bg-white/5 flex items-center justify-center text-muted-foreground">
-                  <p>Route map unavailable</p>
+                  <p>{t("myTrips.routeMap")}</p>
                 </div>
               )}
             </div>
@@ -303,7 +305,7 @@ export default function BookingPage() {
         {bookingStep === "seats" && selectedPickup && selectedDrop && (
           <div className="space-y-6">
             <div className="glass-card rounded-2xl p-6">
-              <h2 className="text-lg font-display font-semibold mb-4">Select Your Seats</h2>
+              <h2 className="text-lg font-display font-semibold mb-4">{t("booking.selectSeats")}</h2>
               <SeatMapConnected 
                 showId={numericTripId} 
                 onSelectionChange={setSelectedSeats} 
@@ -312,7 +314,7 @@ export default function BookingPage() {
 
             <div className="glass-card rounded-2xl p-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-muted-foreground">{selectedSeats.length} seats selected</span>
+                <span className="text-muted-foreground">{selectedSeats.length} {t("booking.seatsSelected")}</span>
                 <span className="text-2xl font-bold text-primary">
                   {selectedSeats.length > 0 
                     ? formatINR(calculateFareBreakdown(
@@ -329,7 +331,7 @@ export default function BookingPage() {
                   data-testid="button-fare-details"
                 >
                   <Receipt className="w-4 h-4" />
-                  View fare breakdown
+                  {t("booking.viewFare")}
                 </button>
               )}
               <Button 
@@ -338,7 +340,7 @@ export default function BookingPage() {
                 onClick={handleBook}
                 data-testid="button-confirm-booking"
               >
-                {bookSeatsMutation.isPending ? "Processing..." : isAuthenticated ? "Confirm Booking" : "Login & Book"}
+                {bookSeatsMutation.isPending ? t("booking.processing") : isAuthenticated ? t("booking.confirmBooking") : t("booking.loginBook")}
               </Button>
             </div>
           </div>
@@ -347,8 +349,8 @@ export default function BookingPage() {
         {bookingStep === "processing" && (
           <div className="glass-card rounded-2xl p-12 text-center">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <h3 className="text-xl font-bold mt-6">Processing Your Booking...</h3>
-            <p className="text-muted-foreground mt-2">Please wait while we reserve your seats</p>
+            <h3 className="text-xl font-bold mt-6">{t("booking.processingTitle")}</h3>
+            <p className="text-muted-foreground mt-2">{t("booking.processingDesc")}</p>
           </div>
         )}
 
@@ -359,22 +361,22 @@ export default function BookingPage() {
             className="glass-card rounded-2xl p-12 text-center"
           >
             <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-display font-bold mb-2">Booking Confirmed!</h2>
+            <h2 className="text-3xl font-display font-bold mb-2">{t("booking.confirmTitle")}</h2>
             <p className="text-muted-foreground mb-6">
-              Confirmation has been sent to {currentUser?.email || 'your email'}
+              {t("booking.confirmDesc")} {currentUser?.email || t("common.yourEmail")}
             </p>
             
             <div className="bg-white/5 rounded-xl p-4 mb-6 text-left max-w-sm mx-auto">
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Booking ID</span>
+                <span className="text-sm text-muted-foreground">{t("booking.bookingId")}</span>
                 <span className="font-mono">#{currentBookingId}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Seats</span>
+                <span className="text-sm text-muted-foreground">{t("booking.seatsLabel")}</span>
                 <span>{selectedSeats.map(s => s.seatNumber).join(", ")}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-sm text-muted-foreground">{t("booking.total")}</span>
                 <span className="text-primary font-bold">
                   {formatINR(selectedSeats.reduce((a, b) => a + parseFloat(b.price), 0))}
                 </span>
@@ -383,17 +385,17 @@ export default function BookingPage() {
 
             <div className="flex gap-4 justify-center flex-wrap">
               <Button variant="outline" onClick={() => setLocation("/my-trips")} data-testid="button-view-trips">
-                View My Trips
+                {t("myTrips.title")}
               </Button>
               <Button onClick={() => setLocation("/")} data-testid="button-book-another">
-                Book Another Trip
+                {t("booking.bookAnother")}
               </Button>
               <Button 
                 variant="secondary"
                 onClick={() => window.open(`/api/bookings/${currentBookingId}/ticket`, "_blank")}
                 data-testid="button-download-ticket"
               >
-                Download Ticket
+                {t("ticket.downloadPdf")}
               </Button>
             </div>
           </motion.div>
