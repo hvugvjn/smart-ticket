@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { sendOtpEmail } from "./lib/mail";
 import { sendBookingConfirmationEmail } from "./lib/booking-email";
+import { requireAdmin } from "./middleware/requireAdmin";
 import { 
   bookSeatsSchema, 
   requestOtpSchema, 
@@ -63,7 +64,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/shows", async (req, res) => {
+  app.post("/api/admin/shows", requireAdmin, async (req, res) => {
     try {
       const parsed = insertShowSchema.safeParse(req.body);
       if (!parsed.success) {
