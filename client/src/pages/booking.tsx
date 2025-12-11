@@ -367,12 +367,19 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="flex gap-4 justify-center">
-              <Button variant="outline" onClick={() => setLocation("/my-trips")}>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button variant="outline" onClick={() => setLocation("/my-trips")} data-testid="button-view-trips">
                 View My Trips
               </Button>
-              <Button onClick={() => setLocation("/")}>
+              <Button onClick={() => setLocation("/")} data-testid="button-book-another">
                 Book Another Trip
+              </Button>
+              <Button 
+                variant="secondary"
+                onClick={() => window.open(`/api/bookings/${currentBookingId}/ticket`, "_blank")}
+                data-testid="button-download-ticket"
+              >
+                Download Ticket
               </Button>
             </div>
           </motion.div>

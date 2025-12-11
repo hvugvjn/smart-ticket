@@ -1,0 +1,79 @@
+Add a "Download Ticket" button on the Booking Confirmed page and implement PDF ticket generation.
+
+1. Update backend:
+   - Create a new route: GET /api/bookings/:id/ticket
+   - This endpoint should:
+     • Fetch booking details (booking, bus, user, trip date, pickup, drop)
+     • Use pdfkit to generate a simple clean PDF ticket
+     • Stream the PDF back as a file download
+   - Install dependency: pdfkit
+
+Backend code (server/routes/ticket.ts):
+
+import { Router } from "express";
+import PDFDocument from "pdfkit";
+import { prisma } from "../lib/prisma";
+
+const router = Router();
+
+router.get("/:id/ticket", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        bus: true,
+        user: true,
+      },
+    });
+
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+    const doc = new PDFDocument();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=ticket_${id}.pdf`);
+
+    doc.fontSize(20).text("NexTravel Bus Ticket", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(14).text(`Booking ID: ${booking.id}`);
+    doc.text(`Passenger: ${booking.user.email}`);
+    doc.text(`Seat: ${booking.seatNumber}`);
+    doc.text(`From: ${booking.from}`);
+    doc.text(`To: ${booking.to}`);
+    doc.text(`Date: ${booking.date}`);
+    doc.text(`Amount Paid: ₹${booking.totalFare}`);
+    doc.text("Have a safe journey!");
+    doc.end();
+
+    doc.pipe(res);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ticket generation failed" });
+  }
+});
+
+export default router;
+
+Register route in server/index.ts:
+app.use("/api/ticket", require("./routes/ticket").default);
+
+
+2. Frontend changes (BookingConfirmedPage):
+
+Add a new button:
+
+<Button
+  className="px-6 py-3 bg-blue-500 text-white rounded-lg"
+  onClick={() => window.open(`/api/ticket/${bookingId}`, "_blank")}
+>
+  Download Ticket
+</Button>
+
+Place it below “View My Trips” and “Book Another Trip”.
+
+3. Ensure UI alignment:
+- Buttons row should be:
+  [View My Trips] [Book Another Trip] [Download Ticket]
+
+4. After implementing, test:
+- Book a seat → Booking Confirmed page loads → click Download Ticket → PDF downloads.
