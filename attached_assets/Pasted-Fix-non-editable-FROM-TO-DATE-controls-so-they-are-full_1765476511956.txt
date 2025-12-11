@@ -1,0 +1,54 @@
+Fix non-editable FROM / TO / DATE controls so they are fully functional in App mode. Do not change the visual design — change behavior, markup and minimal CSS only.
+
+Goals (high level)
+• Replace static/mock inputs with controlled, interactive components.
+• Add a searchable India-only LocationSelect with keyboard navigation.
+• Add a keyboard-accessible datepicker (today → +6 months).
+• Remove any CSS/overlay blocking pointer events.
+• Wire components into home search and booking pages.
+• Add console.logs to verify interactivity.
+
+Tasks (implement exactly)
+
+1) Create LocationSelect component
+Path: client/src/components/LocationSelect.tsx
+Props: { value: string, onChange: (v:string)=>void, placeholder?: string, id?:string }
+Behavior:
+ - Searchable dropdown built from the static city list below.
+ - Keyboard support: ArrowUp, ArrowDown, Enter, Escape.
+ - Accessible ARIA attributes (combobox, listbox, option).
+ - Use onMouseDown for option selection to avoid input blur issues.
+ - Console.log('FROM', value) or console.log('TO', value) when onChange called (for debug).
+
+City list (use exactly):
+["Mumbai","Delhi","Bengaluru","Chennai","Kolkata","Hyderabad","Pune","Ahmedabad","Jaipur","Lucknow","Kochi","Goa","Varanasi","Nagpur","Surat","Indore","Bhubaneswar","Mysore","Amritsar","Visakhapatnam"]
+
+2) Create DatePickerInput component
+Path: client/src/components/DatePickerInput.tsx
+Requirements:
+ - Use react-datepicker or react-day-picker. (Install instructions below.)
+ - Allow dates from today up to 6 months ahead.
+ - Return ISO string (YYYY-MM-DD) in onChange callback.
+ - Accessible and keyboard friendly.
+ - Console.log('DATE SELECTED', iso) on change.
+
+3) Update home search form
+Path: client/src/pages/home.tsx
+Changes:
+ - Replace current FROM and TO UI with <LocationSelect value={from} onChange={setFrom} />.
+ - Replace current date input with <DatePickerInput value={date} onChange={setDate} />.
+ - Ensure SEARCH button uses current state { from, to, date } and console.log('SEARCH', {from,to,date}) when clicked.
+ - If existing search handler exists, invoke it with these values.
+
+4) Update booking page prefill
+Path: client/src/pages/booking/[id].tsx or client/src/pages/booking.tsx
+Changes:
+ - Map server-provided trip props to controlled state if present:
+    const [from,setFrom] = useState(trip?.source || '');
+    useEffect(()=> setFrom(trip?.source || ''), [trip]);
+ - Ensure date prefill maps similarly.
+ - Do not change booking or seat-selection logic.
+
+5) CSS / overlay fixes
+ - Search project CSS for `pointer-events: none` and remove or scope it away from search inputs.
+ - Add this override to global CSS (client/src/index.css) to ensure inputs accept interaction:

@@ -81,7 +81,7 @@ export function LocationSelect({ value, onChange, placeholder = "Select city", e
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0 bg-popover border-border">
+      <PopoverContent className="w-[280px] p-0 bg-popover border-border z-50">
         <Command>
           <CommandInput placeholder="Search city..." className="h-10" />
           <CommandList>

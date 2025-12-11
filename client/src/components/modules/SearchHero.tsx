@@ -17,6 +17,7 @@ export function SearchHero({ onSearch }: { onSearch: (data: any) => void }) {
   const [to, setTo] = useState("Bengaluru");
 
   const handleSearch = () => {
+    console.log("SEARCH", { from, to, date: date?.toISOString().split('T')[0] });
     onSearch({ from, to, date });
   };
 
