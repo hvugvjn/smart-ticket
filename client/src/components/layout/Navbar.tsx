@@ -7,10 +7,12 @@
  */
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Menu, User, ShieldCheck, LogOut, MoreVertical } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { SupportModal } from "@/components/modules/SupportModal";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
+  const { t } = useTranslation();
   const { isAuthenticated, currentUser, setShowOtpModal, logout, isAdmin } = useAuth();
   const [showSupport, setShowSupport] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -87,19 +90,19 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           <Link href="/">
             <span className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-              Book Tickets
+              {t("nav.home")}
             </span>
           </Link>
           {isAdmin && (
             <Link href="/admin">
               <span className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-                Admin
+                {t("nav.admin")}
               </span>
             </Link>
           )}
           <Link href="/my-trips">
             <span className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-              My Trips
+              {t("nav.myTrips")}
             </span>
           </Link>
           <button
@@ -108,9 +111,13 @@ export function Navbar() {
           >
             Support
           </button>
+          <LanguageSwitcher />
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="md:hidden">
+            <LanguageSwitcher />
+          </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
