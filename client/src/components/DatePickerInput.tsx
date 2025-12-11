@@ -25,6 +25,11 @@ export function DatePickerInput({ value, onChange, placeholder = "Pick a date" }
   const today = startOfToday();
   const maxDate = addMonths(today, 6);
 
+  const handleChange = (date: Date | undefined) => {
+    console.log("DatePickerInput onChange:", date);
+    onChange(date);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -46,7 +51,7 @@ export function DatePickerInput({ value, onChange, placeholder = "Pick a date" }
           mode="single"
           selected={value}
           onSelect={(date) => {
-            onChange(date);
+            handleChange(date);
             setOpen(false);
           }}
           disabled={(date) => date < today || date > maxDate}

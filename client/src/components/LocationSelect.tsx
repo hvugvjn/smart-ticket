@@ -57,6 +57,11 @@ export function LocationSelect({ value, onChange, placeholder = "Select city", e
     ? INDIAN_CITIES.filter(city => city !== excludeCity)
     : INDIAN_CITIES;
 
+  const handleChange = (city: string) => {
+    console.log("LocationSelect onChange:", city);
+    onChange(city);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -87,7 +92,7 @@ export function LocationSelect({ value, onChange, placeholder = "Select city", e
                   key={city}
                   value={city}
                   onSelect={() => {
-                    onChange(city);
+                    handleChange(city);
                     setOpen(false);
                   }}
                   className="cursor-pointer"
