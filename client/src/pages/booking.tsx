@@ -6,6 +6,8 @@ import { SeatMapConnected } from "@/components/modules/SeatMapConnected";
 import { PickupModal } from "@/components/PickupModal";
 import { DropModal } from "@/components/DropModal";
 import { PassengerDetailsModal } from "@/components/PassengerDetailsModal";
+import { FareBreakdownModal, calculateFareBreakdown, calculateFareFromBasePrice } from "@/components/FareBreakdownModal";
+import { MapMock } from "@/components/MapMock";
 import { Button } from "@/components/ui/button";
 import { api, type Show, type Seat } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -13,7 +15,7 @@ import { formatINR } from "@/lib/currency";
 import { toast } from "@/hooks/use-toast";
 import { sampleTrips } from "@/data/sampleTrips";
 import { format, parseISO } from "date-fns";
-import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, Navigation, Calendar, Clock, Receipt } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface PassengerDetails {
@@ -51,6 +53,7 @@ export default function BookingPage() {
   const [selectedPickup, setSelectedPickup] = useState<{ id: string; label: string } | null>(null);
   const [selectedDrop, setSelectedDrop] = useState<{ id: string; label: string } | null>(null);
   const [passengerDetails, setPassengerDetails] = useState<PassengerDetails | null>(null);
+  const [showFareModal, setShowFareModal] = useState(false);
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ["show", numericTripId],
@@ -271,6 +274,15 @@ export default function BookingPage() {
                 )}
               </div>
             )}
+
+            <div className="pt-4 border-t border-white/10">
+              <MapMock
+                departureTime={trip.departureTime}
+                arrivalTime={trip.arrivalTime}
+                source={trip.source}
+                destination={trip.destination}
+              />
+            </div>
           </div>
         )}
 
@@ -285,12 +297,27 @@ export default function BookingPage() {
             </div>
 
             <div className="glass-card rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-2">
                 <span className="text-muted-foreground">{selectedSeats.length} seats selected</span>
                 <span className="text-2xl font-bold text-primary">
-                  {formatINR(selectedSeats.reduce((acc, s) => acc + parseFloat(s.price), 0))}
+                  {selectedSeats.length > 0 
+                    ? formatINR(calculateFareBreakdown(
+                        selectedSeats.map(s => parseFloat(s.price))
+                      ).grandTotal)
+                    : formatINR(0)
+                  }
                 </span>
               </div>
+              {selectedSeats.length > 0 && (
+                <button
+                  onClick={() => setShowFareModal(true)}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors mb-4"
+                  data-testid="button-fare-details"
+                >
+                  <Receipt className="w-4 h-4" />
+                  View fare breakdown
+                </button>
+              )}
               <Button 
                 className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90"
                 disabled={selectedSeats.length === 0 || bookSeatsMutation.isPending}
@@ -374,6 +401,12 @@ export default function BookingPage() {
         open={showPassengerModal}
         onClose={() => setShowPassengerModal(false)}
         onSubmit={handlePassengerSubmit}
+      />
+
+      <FareBreakdownModal
+        open={showFareModal}
+        onClose={() => setShowFareModal(false)}
+        seatPrices={selectedSeats.map(s => parseFloat(s.price))}
       />
     </div>
   );

@@ -2,8 +2,10 @@ import { format, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/currency";
-import { Wifi, Coffee, Battery, ArrowRight, Star, Users, Bus } from "lucide-react";
+import { Wifi, Coffee, Battery, ArrowRight, Star, Users, Bus, Receipt } from "lucide-react";
 import { motion } from "framer-motion";
+import { MapMock } from "@/components/MapMock";
+import { calculateFareFromBasePrice } from "@/components/FareBreakdownModal";
 
 interface Trip {
   id: number;
@@ -113,6 +115,10 @@ export function SearchResults({ results, from, to, date, isLoading }: SearchResu
 
             <div className="md:col-span-3 flex flex-col items-end gap-2">
               <p className="text-2xl font-bold font-display text-primary">{formatINR(trip.price)}</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Receipt className="w-3 h-3" />
+                Total: {formatINR(calculateFareFromBasePrice(parseFloat(trip.price), 1).grandTotal)}
+              </p>
               <Link href={`/booking/${trip.id}`}>
                 <Button
                   data-testid={`view-seats-${trip.id}`}
@@ -124,7 +130,17 @@ export function SearchResults({ results, from, to, date, isLoading }: SearchResu
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-white/5 flex gap-4 overflow-x-auto pb-2">
+          <div className="mt-4 pt-4 border-t border-white/5">
+            <MapMock
+              departureTime={trip.departureTime}
+              arrivalTime={trip.arrivalTime}
+              source={trip.source}
+              destination={trip.destination}
+              compact
+            />
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-white/5 flex gap-4 overflow-x-auto pb-2">
             {trip.amenities.map((a) => (
               <span key={a} className="text-xs text-muted-foreground flex items-center whitespace-nowrap">
                 {a === "WiFi" && <Wifi className="w-3 h-3 mr-1" />}
