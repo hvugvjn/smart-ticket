@@ -84,7 +84,7 @@ export default function AdminConnected() {
     <div className="min-h-screen bg-background text-foreground font-sans">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-6 py-24 space-y-8">
+      <div className="main-content max-w-7xl mx-auto px-6 py-8 space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold">Admin Dashboard</h1>

@@ -121,7 +121,7 @@ export default function MyTripsPage() {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
           <Ticket className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
           <h1 className="text-2xl font-display font-bold mb-4">Login Required</h1>
           <p className="text-muted-foreground mb-6">Please login to view your trips.</p>
@@ -137,7 +137,7 @@ export default function MyTripsPage() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="main-content max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-display font-bold mb-8">My Trips</h1>
 
         {isLoading ? (

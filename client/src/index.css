@@ -44,6 +44,9 @@
 }
 
 :root {
+  /* Header height for content offset */
+  --site-header-height: 80px;
+
   /* Default to Dark Mode aesthetics as primary */
   --background: 224 71% 4%;
   --foreground: 210 40% 98%;
@@ -85,6 +88,12 @@
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
+  }
+  main, .main-content {
+    padding-top: var(--site-header-height);
+  }
+  section[id], [data-section] {
+    scroll-margin-top: var(--site-header-height);
   }
 }
 

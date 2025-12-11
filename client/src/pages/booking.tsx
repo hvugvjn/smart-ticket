@@ -196,7 +196,7 @@ export default function BookingPage() {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-display font-bold mb-4">Trip Not Found</h1>
           <p className="text-muted-foreground mb-6">The trip you're looking for doesn't exist.</p>
           <Button onClick={() => setLocation("/")}>Back to Home</Button>
@@ -209,7 +209,7 @@ export default function BookingPage() {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <div className="main-content max-w-4xl mx-auto px-4 py-20 text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground mt-4">Loading trip details...</p>
         </div>
@@ -221,7 +221,7 @@ export default function BookingPage() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="main-content max-w-4xl mx-auto px-4 py-8">
         {trip && (
           <div className="glass-card rounded-2xl p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
