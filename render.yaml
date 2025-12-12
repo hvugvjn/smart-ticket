@@ -5,10 +5,10 @@ services:
   - type: web
     name: smart-ticket-backend
     env: node
-    root: server
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run db:push && npm start
+    # root: server  <-- apparently causing validation issues, so we use 'cd server' instead
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && npm run db:push && npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -42,10 +42,10 @@ services:
   - type: web
     name: smart-ticket-frontend
     env: static
-    root: client
     plan: free
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    # root: client  <-- using 'cd client' instead
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/dist
     envVars:
       - key: VITE_API_BASE_URL
         fromService:
