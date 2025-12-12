@@ -1,6 +1,8 @@
-# NexTravel - Level-5 Intelligent Ticket Booking Platform
+# NexTravel - Modern Bus Booking Platform
 
-A next-generation ticket booking platform with real-time seat selection, intelligent recommendations, and high-concurrency booking engine built with React, Express, and PostgreSQL.
+![NexTravel Banner](https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=2069&auto=format&fit=crop)
+
+A comprehensive, modern bus booking management system built with the latest web technologies. NexTravel offers a seamless experience for both operators and passengers, featuring route management, seat selection, and secure booking flows.
 
 ## 🎯 Features
 
@@ -120,7 +122,7 @@ A next-generation ticket booking platform with real-time seat selection, intelli
 
 ### Prerequisites
 - Node.js 20+
-- PostgreSQL database (automatically provisioned in Replit)
+- PostgreSQL database
 
 ### Installation
 
