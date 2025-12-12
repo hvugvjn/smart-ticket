@@ -6,6 +6,7 @@ services:
     name: smart-ticket-backend
     env: node
     root: server
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run db:push && npm start
     envVars:
@@ -42,6 +43,7 @@ services:
     name: smart-ticket-frontend
     env: static
     root: client
+    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
@@ -51,20 +53,18 @@ services:
           name: smart-ticket-backend
           property: url
 
+databases:
   # ========================================
   # Database (PostgreSQL)
   # ========================================
-  - type: psql
-    name: smart-ticket-db
-    env: docker
+  - name: smart-ticket-db
     plan: free
-    ipAllowList: [] # Access from internal services only
+    databaseName: smart_ticket
+    user: smart_ticket_user
 
   # ========================================
   # Cache (Redis)
   # ========================================
-  - type: redis
-    name: smart-ticket-redis
-    env: docker
-    plan: free
+  - name: smart-ticket-redis
+    plan: free # Note: free redis is ephemeral on Render, but works for cache/sessions
     ipAllowList: [] # Access from internal services only
