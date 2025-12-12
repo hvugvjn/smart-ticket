@@ -31,6 +31,8 @@ interface AuthContextType {
   setShowOtpModal: (show: boolean) => void;
   email: string;
   setEmail: (email: string) => void;
+  phoneNumber: string;
+  setPhoneNumber: (phone: string) => void;
   isAdmin: boolean;
 }
 
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [email, setEmail] = useState("user@example.com");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const isAuthenticated = !!token && !!currentUser;
   const isAdmin = currentUser?.role === 'admin';
@@ -91,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setShowOtpModal,
         email,
         setEmail,
+        phoneNumber,
+        setPhoneNumber,
         isAdmin,
       }}
     >

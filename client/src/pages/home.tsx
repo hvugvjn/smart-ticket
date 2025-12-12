@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { SeatMap } from "@/components/modules/SeatMap";
 import { format } from "date-fns";
 import { Clock, Wifi, Coffee, Battery, ArrowRight, CheckCircle2, Shield, Star, Users } from "lucide-react";
-import heroImage from "@assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
+import heroImage from "../assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,7 +41,7 @@ export default function Home() {
       });
       return;
     }
-    
+
     setBookingStep("success");
     toast({
       title: t("booking.confirmTitle"),
@@ -58,21 +58,21 @@ export default function Home() {
       <div className="relative h-[600px] w-full overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background z-10" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent z-10" />
-        <img 
-          src={heroImage} 
-          alt="Luxury Travel" 
+        <img
+          src={heroImage}
+          alt="Luxury Travel"
           className="w-full h-full object-cover opacity-80 scale-105 animate-in fade-in zoom-in duration-[2s]"
         />
-        
+
         <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-12 max-w-7xl mx-auto">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="max-w-3xl"
           >
             <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight mb-6">
-              {t("home.title").split("Future").map((part, i) => 
+              {t("home.title").split("Future").map((part, i) =>
                 i === 0 ? (
                   <span key={i}>{part}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 text-glow">Future</span></span>
                 ) : part
@@ -95,13 +95,13 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-display font-semibold">{t("results.title")}</h2>
               <div className="flex gap-2">
-                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">{t("results.cheapest")}</Button>
-                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">{t("results.fastest")}</Button>
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">{t("results.cheapest")}</Button>
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">{t("results.fastest")}</Button>
               </div>
             </div>
-            
+
             {searchResults.map((trip) => (
-              <motion.div 
+              <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -109,9 +109,9 @@ export default function Home() {
                 className="group glass-card rounded-2xl p-6 relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
-                   <div className="bg-white/5 p-2 rounded-full border border-white/10">
-                      <ArrowRight className="w-5 h-5 -rotate-45 text-primary" />
-                   </div>
+                  <div className="bg-white/5 p-2 rounded-full border border-white/10">
+                    <ArrowRight className="w-5 h-5 -rotate-45 text-primary" />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -147,7 +147,7 @@ export default function Home() {
                   {/* Price & Action */}
                   <div className="md:col-span-3 flex flex-col items-end gap-2">
                     <p className="text-2xl font-bold font-display text-primary">${trip.price}</p>
-                    <Button 
+                    <Button
                       className="w-full bg-white/10 hover:bg-primary hover:text-primary-foreground text-foreground border border-white/10 transition-all duration-300"
                       onClick={() => {
                         setSelectedTrip(trip);
@@ -159,17 +159,17 @@ export default function Home() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Amenities */}
                 <div className="mt-6 pt-4 border-t border-white/5 flex gap-4 overflow-x-auto pb-2">
-                   {trip.amenities.map(a => (
-                     <span key={a} className="text-xs text-muted-foreground flex items-center whitespace-nowrap">
-                       {a === "WiFi" && <Wifi className="w-3 h-3 mr-1" />}
-                       {a === "Water Bottle" && <Coffee className="w-3 h-3 mr-1" />}
-                       {a === "Charging Point" && <Battery className="w-3 h-3 mr-1" />}
-                       {a}
-                     </span>
-                   ))}
+                  {trip.amenities.map(a => (
+                    <span key={a} className="text-xs text-muted-foreground flex items-center whitespace-nowrap">
+                      {a === "WiFi" && <Wifi className="w-3 h-3 mr-1" />}
+                      {a === "Water Bottle" && <Coffee className="w-3 h-3 mr-1" />}
+                      {a === "Charging Point" && <Battery className="w-3 h-3 mr-1" />}
+                      {a}
+                    </span>
+                  ))}
                 </div>
               </motion.div>
             ))}
@@ -193,21 +193,21 @@ export default function Home() {
               <div className="flex-1 p-6">
                 <AnimatePresence mode="wait">
                   {bookingStep === "seats" && (
-                    <motion.div 
+                    <motion.div
                       key="seats"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                     >
-                      <SeatMap 
-                        tripId={selectedTrip.id} 
-                        onSelectionChange={setSelectedSeats} 
+                      <SeatMap
+                        tripId={selectedTrip.id}
+                        onSelectionChange={setSelectedSeats}
                       />
                     </motion.div>
                   )}
 
                   {bookingStep === "auth" && (
-                    <motion.div 
+                    <motion.div
                       key="auth"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -215,56 +215,56 @@ export default function Home() {
                       className="space-y-6 pt-10"
                     >
                       <div className="text-center space-y-2">
-                         <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                            <Shield className="w-8 h-8" />
-                         </div>
-                         <h3 className="text-xl font-bold">Verify Identity</h3>
-                         <p className="text-sm text-muted-foreground">Enter the OTP sent to +1 (555) ***-**99</p>
+                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                          <Shield className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold">Verify Identity</h3>
+                        <p className="text-sm text-muted-foreground">Enter the OTP sent to +1 (555) ***-**99</p>
                       </div>
 
                       <div className="max-w-xs mx-auto space-y-4">
-                        <input 
-                           type="text" 
-                           placeholder="0000"
-                           className="w-full text-center text-4xl tracking-[1em] font-mono bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-4 transition-colors"
-                           maxLength={4}
-                           value={otp}
-                           onChange={(e) => setOtp(e.target.value)}
+                        <input
+                          type="text"
+                          placeholder="0000"
+                          className="w-full text-center text-4xl tracking-[1em] font-mono bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-4 transition-colors"
+                          maxLength={4}
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value)}
                         />
                         <div className="flex justify-between text-xs text-muted-foreground">
-                           <span>Resend in 00:45</span>
-                           <span className="text-primary cursor-pointer hover:underline">Resend</span>
+                          <span>Resend in 00:45</span>
+                          <span className="text-primary cursor-pointer hover:underline">Resend</span>
                         </div>
                       </div>
                     </motion.div>
                   )}
 
                   {bookingStep === "success" && (
-                    <motion.div 
+                    <motion.div
                       key="success"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex flex-col items-center justify-center h-full space-y-6 text-center pt-20"
                     >
                       <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.5)]">
-                         <CheckCircle2 className="w-12 h-12 text-black" />
+                        <CheckCircle2 className="w-12 h-12 text-black" />
                       </div>
                       <h2 className="text-3xl font-display font-bold">Booking Confirmed!</h2>
                       <p className="text-muted-foreground max-w-xs">Your seats have been successfully reserved. A confirmation email has been sent.</p>
-                      
+
                       <div className="w-full bg-white/5 rounded-xl p-4 mt-8 border border-white/10 text-left">
-                         <div className="flex justify-between mb-2">
-                            <span className="text-sm text-muted-foreground">Trip ID</span>
-                            <span className="font-mono">{selectedTrip.id}</span>
-                         </div>
-                         <div className="flex justify-between mb-2">
-                            <span className="text-sm text-muted-foreground">Seats</span>
-                            <span>{selectedSeats.map(s => s.label).join(", ")}</span>
-                         </div>
-                         <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Total</span>
-                            <span className="text-primary font-bold">${selectedSeats.reduce((a,b) => a + b.price, 0)}</span>
-                         </div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Trip ID</span>
+                          <span className="font-mono">{selectedTrip.id}</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Seats</span>
+                          <span>{selectedSeats.map(s => s.label).join(", ")}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Total</span>
+                          <span className="text-primary font-bold">${selectedSeats.reduce((a, b) => a + b.price, 0)}</span>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -281,7 +281,7 @@ export default function Home() {
                           ${selectedSeats.reduce((acc, s) => acc + s.price, 0)}
                         </span>
                       </div>
-                      <Button 
+                      <Button
                         className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
                         disabled={selectedSeats.length === 0}
                         onClick={handleBook}
@@ -290,7 +290,7 @@ export default function Home() {
                       </Button>
                     </div>
                   ) : (
-                    <Button 
+                    <Button
                       className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
                       onClick={handleConfirmBooking}
                     >

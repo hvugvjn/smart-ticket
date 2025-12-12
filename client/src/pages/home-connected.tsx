@@ -17,7 +17,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { SeatMapConnected } from "@/components/modules/SeatMapConnected";
 import { format, parseISO } from "date-fns";
 import { Wifi, Coffee, Battery, ArrowRight, CheckCircle2, Star, Users } from "lucide-react";
-import heroImage from "@assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
+import heroImage from "../assets/generated_images/futuristic_luxury_bus_interior_with_ambient_lighting.png";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
@@ -59,7 +59,7 @@ export default function HomeConnected() {
     }, 2000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Search state
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearched, setIsSearched] = useState(false);
@@ -67,7 +67,7 @@ export default function HomeConnected() {
   const [searchFrom, setSearchFrom] = useState("");
   const [searchTo, setSearchTo] = useState("");
   const [searchDate, setSearchDate] = useState("");
-  
+
   // Pickup/Drop point selection state
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showDropModal, setShowDropModal] = useState(false);
@@ -75,7 +75,7 @@ export default function HomeConnected() {
   const [selectedPickupPoint, setSelectedPickupPoint] = useState<{ id: string; label: string } | null>(null);
   const [selectedDropPoint, setSelectedDropPoint] = useState<{ id: string; label: string } | null>(null);
   const [, setLocation] = useLocation();
-  
+
   const queryClient = useQueryClient();
 
   const { data: shows = [] } = useQuery({
@@ -86,7 +86,7 @@ export default function HomeConnected() {
   const handleSearch = async ({ from, to, date }: { from: string; to: string; date?: Date }) => {
     const localDateStr = date ? toLocalISO(date) : "";
     console.log("SEARCH START", { from, to, date: localDateStr });
-    
+
     if (!from || !to) {
       toast({
         title: "Missing fields",
@@ -106,17 +106,17 @@ export default function HomeConnected() {
       // Try API first
       const dateParam = localDateStr;
       const url = `/api/shows?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${dateParam ? `&date=${dateParam}` : ""}`;
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
-      
+
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         const data = await response.json();
         // Filter results by source/destination (API returns all shows)
-        const filtered = data.filter((trip: any) => 
+        const filtered = data.filter((trip: any) =>
           trip.source.toLowerCase() === from.toLowerCase() &&
           trip.destination.toLowerCase() === to.toLowerCase()
         );
@@ -165,7 +165,7 @@ export default function HomeConnected() {
       setCurrentBookingId(booking.id);
       setBookingStep("success");
       queryClient.invalidateQueries({ queryKey: ["seats"] });
-      
+
       const existingBookings = JSON.parse(localStorage.getItem("userBookings") || "[]");
       existingBookings.push({
         ...booking,
@@ -177,7 +177,7 @@ export default function HomeConnected() {
         } : undefined,
       });
       localStorage.setItem("userBookings", JSON.stringify(existingBookings));
-      
+
       toast({
         title: "Booking Confirmed! 🚀",
         description: "Your tickets have been reserved.",
@@ -195,10 +195,10 @@ export default function HomeConnected() {
 
   const handleViewSeats = (trip: any) => {
     const sampleTrip = sampleTrips.find(s => s.id === trip.id);
-    setPendingTripForBooking({ 
-      ...trip, 
-      pickupPoints: sampleTrip?.pickupPoints || [], 
-      dropPoints: sampleTrip?.dropPoints || [] 
+    setPendingTripForBooking({
+      ...trip,
+      pickupPoints: sampleTrip?.pickupPoints || [],
+      dropPoints: sampleTrip?.dropPoints || []
     });
     setShowPickupModal(true);
   };
@@ -214,7 +214,7 @@ export default function HomeConnected() {
     console.log('DROP SELECTED', point);
     setSelectedDropPoint(point);
     setShowDropModal(false);
-    
+
     if (pendingTripForBooking && selectedPickupPoint) {
       setLocation(`/booking/${pendingTripForBooking.id}?pickup=${selectedPickupPoint.id}&drop=${point.id}`);
       setPendingTripForBooking(null);
@@ -225,7 +225,7 @@ export default function HomeConnected() {
 
   const handleBook = () => {
     if (!selectedTrip || selectedSeats.length === 0) return;
-    
+
     if (!isAuthenticated) {
       setPendingBooking({
         showId: selectedTrip.id,
@@ -239,7 +239,7 @@ export default function HomeConnected() {
       });
       return;
     }
-    
+
     setBookingStep("processing");
     bookSeatsMutation.mutate({
       showId: selectedTrip.id,
@@ -258,14 +258,14 @@ export default function HomeConnected() {
       <div className="relative h-[600px] w-full overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background z-10 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent z-10 pointer-events-none" />
-        <img 
-          src={heroImage} 
-          alt="Luxury Travel" 
+        <img
+          src={heroImage}
+          alt="Luxury Travel"
           className="w-full h-full object-cover opacity-80 scale-105 animate-in fade-in zoom-in duration-[2s]"
         />
-        
+
         <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-12 max-w-7xl mx-auto pointer-events-none">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -302,7 +302,7 @@ export default function HomeConnected() {
         {/* Search Results Section */}
         {isSearched && (
           <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-500">
-            <SearchResults 
+            <SearchResults
               results={searchResults}
               from={searchFrom}
               to={searchTo}
@@ -318,13 +318,13 @@ export default function HomeConnected() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-display font-semibold">Available Trips</h2>
               <div className="flex gap-2">
-                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">Cheapest</Button>
-                 <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">Fastest</Button>
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">Cheapest</Button>
+                <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all">Fastest</Button>
               </div>
             </div>
-            
+
             {shows.map((trip) => (
-              <motion.div 
+              <motion.div
                 key={trip.id}
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -333,9 +333,9 @@ export default function HomeConnected() {
                 data-testid={`trip-card-${trip.id}`}
               >
                 <div className="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
-                   <div className="bg-white/5 p-2 rounded-full border border-white/10">
-                      <ArrowRight className="w-5 h-5 -rotate-45 text-primary" />
-                   </div>
+                  <div className="bg-white/5 p-2 rounded-full border border-white/10">
+                    <ArrowRight className="w-5 h-5 -rotate-45 text-primary" />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -368,7 +368,7 @@ export default function HomeConnected() {
 
                   <div className="md:col-span-3 flex flex-col items-end gap-2">
                     <p className="text-2xl font-bold font-display text-primary">{formatINR(trip.price)}</p>
-                    <Button 
+                    <Button
                       data-testid={`view-seats-${trip.id}`}
                       className="w-full bg-white/10 hover:bg-primary hover:text-primary-foreground text-foreground border border-white/10 transition-all duration-300"
                       onClick={() => handleViewSeats(trip)}
@@ -377,16 +377,16 @@ export default function HomeConnected() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="mt-6 pt-4 border-t border-white/5 flex gap-4 overflow-x-auto pb-2">
-                   {trip.amenities.map(a => (
-                     <span key={a} className="text-xs text-muted-foreground flex items-center whitespace-nowrap">
-                       {a === "WiFi" && <Wifi className="w-3 h-3 mr-1" />}
-                       {a === "Water Bottle" && <Coffee className="w-3 h-3 mr-1" />}
-                       {a === "Charging Point" && <Battery className="w-3 h-3 mr-1" />}
-                       {a}
-                     </span>
-                   ))}
+                  {trip.amenities.map(a => (
+                    <span key={a} className="text-xs text-muted-foreground flex items-center whitespace-nowrap">
+                      {a === "WiFi" && <Wifi className="w-3 h-3 mr-1" />}
+                      {a === "Water Bottle" && <Coffee className="w-3 h-3 mr-1" />}
+                      {a === "Charging Point" && <Battery className="w-3 h-3 mr-1" />}
+                      {a}
+                    </span>
+                  ))}
                 </div>
               </motion.div>
             ))}
@@ -409,21 +409,21 @@ export default function HomeConnected() {
               <div className="flex-1 p-6">
                 <AnimatePresence mode="wait">
                   {bookingStep === "seats" && (
-                    <motion.div 
+                    <motion.div
                       key="seats"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                     >
-                      <SeatMapConnected 
-                        showId={selectedTrip.id} 
-                        onSelectionChange={setSelectedSeats} 
+                      <SeatMapConnected
+                        showId={selectedTrip.id}
+                        onSelectionChange={setSelectedSeats}
                       />
                     </motion.div>
                   )}
 
                   {bookingStep === "processing" && (
-                    <motion.div 
+                    <motion.div
                       key="processing"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -437,31 +437,31 @@ export default function HomeConnected() {
                   )}
 
                   {bookingStep === "success" && (
-                    <motion.div 
+                    <motion.div
                       key="success"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex flex-col items-center justify-center h-full space-y-6 text-center pt-20"
                     >
                       <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.5)]">
-                         <CheckCircle2 className="w-12 h-12 text-black" />
+                        <CheckCircle2 className="w-12 h-12 text-black" />
                       </div>
                       <h2 className="text-3xl font-display font-bold">Booking Confirmed!</h2>
                       <p className="text-muted-foreground max-w-xs">Your seats have been successfully reserved. A confirmation has been sent.</p>
-                      
+
                       <div className="w-full bg-white/5 rounded-xl p-4 mt-8 border border-white/10 text-left">
-                         <div className="flex justify-between mb-2">
-                            <span className="text-sm text-muted-foreground">Trip ID</span>
-                            <span className="font-mono">{selectedTrip.id}</span>
-                         </div>
-                         <div className="flex justify-between mb-2">
-                            <span className="text-sm text-muted-foreground">Seats</span>
-                            <span>{selectedSeats.map(s => s.seatNumber).join(", ")}</span>
-                         </div>
-                         <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Total</span>
-                            <span className="text-primary font-bold">{formatINR(selectedSeats.reduce((a,b) => a + parseFloat(b.price), 0))}</span>
-                         </div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Trip ID</span>
+                          <span className="font-mono">{selectedTrip.id}</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Seats</span>
+                          <span>{selectedSeats.map(s => s.seatNumber).join(", ")}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Total</span>
+                          <span className="text-primary font-bold">{formatINR(selectedSeats.reduce((a, b) => a + parseFloat(b.price), 0))}</span>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -477,7 +477,7 @@ export default function HomeConnected() {
                         {formatINR(selectedSeats.reduce((acc, s) => acc + parseFloat(s.price), 0))}
                       </span>
                     </div>
-                    <Button 
+                    <Button
                       data-testid="button-proceed-book"
                       className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
                       disabled={selectedSeats.length === 0 || bookSeatsMutation.isPending}
