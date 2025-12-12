@@ -53,6 +53,14 @@ services:
           name: smart-ticket-backend
           property: url
 
+  # ========================================
+  # Cache (Redis)
+  # ========================================
+  - type: redis
+    name: smart-ticket-redis
+    plan: free
+    ipAllowList: [] # Access from internal services only
+
 databases:
   # ========================================
   # Database (PostgreSQL)
@@ -61,10 +69,3 @@ databases:
     plan: free
     databaseName: smart_ticket
     user: smart_ticket_user
-
-  # ========================================
-  # Cache (Redis)
-  # ========================================
-  - name: smart-ticket-redis
-    plan: free # Note: free redis is ephemeral on Render, but works for cache/sessions
-    ipAllowList: [] # Access from internal services only
