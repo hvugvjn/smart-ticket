@@ -1,8 +1,8 @@
 import { db } from "./db";
-import { 
-  shows, 
-  seats, 
-  bookings, 
+import {
+  shows,
+  seats,
+  bookings,
   users,
   seatLocks,
   refunds,
@@ -29,24 +29,24 @@ export interface IStorage {
   getShows(): Promise<Show[]>;
   getShow(id: number): Promise<Show | undefined>;
   createShow(show: InsertShow): Promise<Show>;
-  
+
   getSeats(showId: number): Promise<Seat[]>;
   getSeatsByIds(seatIds: number[]): Promise<Seat[]>;
   createSeats(seats: InsertSeat[]): Promise<Seat[]>;
-  
+
   getBookingByIdempotencyKey(key: string): Promise<Booking | undefined>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   confirmBooking(id: number): Promise<Booking | undefined>;
   expireOldBookings(): Promise<number>;
   getBookedSeatIds(showId: number): Promise<number[]>;
   getSeatGenderMap(showId: number): Promise<Map<number, string>>;
-  
+
   getUserByPhone(phoneNumber: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserOtp(phoneNumber: string, otp: string, expiresAt: Date): Promise<User | undefined>;
   incrementOtpAttempts(phoneNumber: string): Promise<void>;
   resetOtpAttempts(phoneNumber: string): Promise<void>;
-  
+
   // Email-based auth
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -55,19 +55,19 @@ export interface IStorage {
   incrementOtpAttemptsByEmail(email: string): Promise<void>;
   resetOtpAttemptsByEmail(email: string): Promise<void>;
   updateUserGender(id: number, gender: string): Promise<User | undefined>;
-  
+
   // Seat locking
   lockSeat(showId: number, seatId: number, userId: string, expiresAt: Date): Promise<SeatLock | null>;
   unlockSeat(showId: number, seatId: number, userId: string): Promise<boolean>;
   getLockedSeats(showId: number): Promise<SeatLock[]>;
   cleanupExpiredLocks(): Promise<number>;
-  
+
   // Cancellation and refunds
   getBookingById(id: number): Promise<Booking | undefined>;
   getBookingsByUserId(userId: string): Promise<Booking[]>;
   cancelBooking(id: number, refundAmount: number, reason: string): Promise<{ booking: Booking; refund: Refund } | null>;
   getRefundByBookingId(bookingId: number): Promise<Refund | undefined>;
-  
+
   // Seat notifications
   createSeatNotification(notification: InsertSeatNotification): Promise<SeatNotification>;
   getPendingNotifications(showId: number, seatNumber: string): Promise<SeatNotification[]>;
@@ -146,7 +146,7 @@ export class PostgresStorage implements IStorage {
           inArray(bookings.status, ["PENDING", "CONFIRMED"])
         )
       );
-    
+
     const allSeatIds: number[] = [];
     result.forEach(r => {
       if (r.seatIds) {
@@ -166,7 +166,7 @@ export class PostgresStorage implements IStorage {
           eq(bookings.status, "CONFIRMED")
         )
       );
-    
+
     const seatGenderMap = new Map<number, string>();
     result.forEach(r => {
       if (r.seatIds) {
@@ -273,11 +273,11 @@ export class PostgresStorage implements IStorage {
           gt(seatLocks.expiresAt, new Date())
         )
       );
-    
+
     if (existingLock.length > 0 && existingLock[0].userId !== userId) {
       return null; // Locked by someone else
     }
-    
+
     // If already locked by same user, update expiry
     if (existingLock.length > 0) {
       const updated = await db
@@ -287,7 +287,7 @@ export class PostgresStorage implements IStorage {
         .returning();
       return updated[0];
     }
-    
+
     // Create new lock
     const result = await db
       .insert(seatLocks)
