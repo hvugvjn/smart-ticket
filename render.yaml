@@ -41,8 +41,7 @@ services:
   - type: web
     name: smart-ticket-frontend
     env: static
-    plan: free
-    # Updated build command to construct the full URL from the host variable
+    # plan: free  <-- Removed this line as static sites don't use compute plans
     buildCommand: cd client && npm install && VITE_API_BASE_URL=https://$BACKEND_HOST npm run build
     staticPublishPath: client/dist
     envVars:
